@@ -1,6 +1,6 @@
 # Course Registration Dashboard
 
-A full-stack web application designed for **Wilfrid Laurier University** students and administrators to manage the academic registration process efficiently[cite: 1]. This project is developed for **CP476 - Internet Computing** under the guidance of **Dr. Raed Karim**[cite: 1].
+A full-stack web application designed for **Wilfrid Laurier University** students and administrators to manage the academic registration process efficiently. This project is developed for **CP476 - Internet Computing**.
 
 ---
 
@@ -23,19 +23,18 @@ The Course Registration Dashboard centralizes course planning, searching, and en
 
 ---
 
-## The Team
+## 👥 The Team
 | Name | Primary Role |
-| :--- | :--- | :--- |
+| :--- | :--- |
 | **Ahmed Nafees** | DevOps & Repo Lead |
 | **Nick Kunde-Lenny** | Scrum Master |
-| **Matt Kondratowicz**| Data Lead |
+| **Matt Kondratowicz** | Data Lead |
 | **Ayush Gogne** | UX Designer |
 | **Alex Near** | UI Designer |
 | **Naram Yashooa** | UI Designer |
 | **Ryan Chisholm** | Documentation |
 | **Manha Malik** | Proposal & Copy |
 | **Isabel Katai** | Proposal & Copy |
-
 ---
 
 ## Project Cadence
