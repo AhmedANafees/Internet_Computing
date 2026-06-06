@@ -2,7 +2,7 @@
 
 ## Meeting Minutes Log
 
-### May 29, 2026: Project Selection & Role Assignment
+### May 19, 2026: Project Selection & Role Assignment
 **Time:** 5:00 PM - 6:00 PM  
 **Location:** Discord Voice Channel / In-Person  
 **Attendees:** Full Team  
