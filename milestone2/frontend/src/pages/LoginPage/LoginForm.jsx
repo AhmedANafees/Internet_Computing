@@ -7,6 +7,7 @@ export default function LoginForm(){
             <form>
                 <fieldset>
                     <legend>
+                        Welcome to Registration<br/>
                         Please enter your school credentials
                     </legend>
                     <label htmlFor="f-email"> 
@@ -16,7 +17,7 @@ export default function LoginForm(){
                     <label htmlFor="f-password"> 
                         Password
                     </label>
-                    <input type="text" id="f-password"/>
+                    <input type="password" id="f-password"/>
                     <a href="">Forgot my password</a>
                     <div id = "button-row">
                     <button type="submit" id="login-student">Sign In As Student</button>
