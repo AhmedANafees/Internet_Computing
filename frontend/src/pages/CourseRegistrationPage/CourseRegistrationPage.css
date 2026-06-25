@@ -15,6 +15,44 @@
   border-radius: 12px;
   padding: 20px;
 }
+
+.cr-search-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cr-search-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #dbcfcf;
+  border-radius: 8px;
+}
+
+.cr-search-clear {
+  border: 0;
+  background: #e7d4d4;
+  color: #523d3d;
+  border-radius: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.cr-empty {
+  color: #665454;
+}
+
+.cr-simple-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cr-simple-table th,
+.cr-simple-table td {
+  border-bottom: 1px solid #eadede;
+  text-align: left;
+  padding: 10px 6px;
+}
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap');
 
 /* ── Layout ─────────────────────────────────────────────────────────────────── */
