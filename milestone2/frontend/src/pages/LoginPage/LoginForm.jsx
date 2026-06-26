@@ -15,6 +15,7 @@ export default function LoginForm() {
     }
     async function handleSubmit(e) {
         e.preventDefault();
+        try{
         const response = await fetch("http://localhost:3000/api/auth/login", {
             method: "POST",
             headers: {
@@ -33,6 +34,10 @@ export default function LoginForm() {
         else {
             alert("Invalid Email or Password. Please Try Again.")
         }
+    }
+    catch {
+        alert("Something Went Wrong. Try Again Later.")
+    }
     }
 
     return (<div id='login-container'>
