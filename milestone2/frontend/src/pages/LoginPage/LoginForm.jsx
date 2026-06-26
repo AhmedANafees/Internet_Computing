@@ -1,12 +1,13 @@
+
 import '../LoginPage/LoginForm.css'
 import placeholder from '../../assets/Rectangle.png'
 import { useState } from 'react'
-
+import { redirect } from 'react-router';
 
 export default function LoginForm() {
     const [inputs, setInputs] = useState({
-        email: '',
-        password: ''
+        email: 'teststudent@example.edu',
+        password: 'Password123!'
     });
     function handleChange(e) {
         const name = e.target.name;
@@ -25,18 +26,20 @@ export default function LoginForm() {
                 email: inputs.email,
                 password: inputs.password
             })
-        })
+        });
 
         if (response.ok) {
-            data = JSON.parse(response.json()).data;
+            const data = await response.json();
             localStorage.setItem("token", data.token);
+            // location.href = "http://localhost:8080/dashboard" uncomment to allow for redirection to dashboard on succesful login
         }
         else {
             alert("Invalid Email or Password. Please Try Again.")
         }
     }
-    catch {
-        alert("Something Went Wrong. Try Again Later.")
+    catch (err){
+        alert("Something Went Wrong. Try Again Later.");
+        console.error(err);
     }
     }
 
