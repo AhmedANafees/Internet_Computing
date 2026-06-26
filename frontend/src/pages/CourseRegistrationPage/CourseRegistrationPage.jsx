@@ -2,14 +2,31 @@ import { useMemo, useState } from 'react';
 import Sidebar from '../../components/Sidebar/Sidebar';
 import CourseRegistrationPageHeader from '../../components/CourseRegistrationPage/CourseRegistrationPageHeader';
 import CourseRegistrationFilters from '../../components/CourseRegistrationPage/CourseRegistrationFilters';
+import CourseRegistrationTable from '../../components/CourseRegistrationPage/CourseRegistrationTable';
 import { mockCourses } from '../../data/mockCourses';
 import { useDebounce } from '../../hooks/useDebounce';
 import './CourseRegistrationPage.css';
+
+const ALL_COLUMNS = [
+  { id: 'code', label: 'Code' },
+  { id: 'title', label: 'Name' },
+  { id: 'section', label: 'Section' },
+  { id: 'credits', label: 'Credits' },
+  { id: 'instructor', label: 'Instructor' },
+  { id: 'time', label: 'Time' },
+  { id: 'seats', label: 'Seats' },
+  { id: 'term', label: 'Term' },
+  { id: 'subject', label: 'Subject' },
+];
+
+const DEFAULT_VISIBLE = new Set(['code', 'title', 'section', 'credits', 'instructor', 'time', 'seats']);
 
 export default function CourseRegistrationPage() {
   const [searchRaw, setSearchRaw] = useState('');
   const [selectedTerm, setSelectedTerm] = useState('');
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [colPickerOpen, setColPickerOpen] = useState(false);
+  const [visibleCols, setVisibleCols] = useState(DEFAULT_VISIBLE);
   const [activeFilters, setActiveFilters] = useState({ faculties: [], levels: [], subjects: [] });
   const search = useDebounce(searchRaw, 300);
 
@@ -48,6 +65,19 @@ export default function CourseRegistrationPage() {
     setActiveFilters({ faculties: [], levels: [], subjects: [] });
   }
 
+  function toggleCol(columnId) {
+    setVisibleCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(columnId)) {
+        if (next.size === 1) return next;
+        next.delete(columnId);
+      } else {
+        next.add(columnId);
+      }
+      return next;
+    });
+  }
+
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
     const allRows = mockCourses.flatMap((course) =>
@@ -66,6 +96,27 @@ export default function CourseRegistrationPage() {
       return true;
     });
   }, [activeFilters, search, selectedTerm]);
+
+  const rowsWithRender = rows.map(({ course, section }) => ({
+    course,
+    section,
+  }));
+
+  const columnsWithRender = ALL_COLUMNS.map((column) => ({
+    ...column,
+    render: (course, section) => {
+      if (column.id === 'code') return course.code;
+      if (column.id === 'title') return course.title;
+      if (column.id === 'section') return section.sectionNumber;
+      if (column.id === 'credits') return course.credits;
+      if (column.id === 'instructor') return section.instructor;
+      if (column.id === 'time') return section.schedule.map((slot) => `${slot.day} ${slot.startTime}-${slot.endTime}`).join(', ');
+      if (column.id === 'seats') return `${section.seatsRemaining} / ${section.seatsTotal}`;
+      if (column.id === 'term') return section.term;
+      if (column.id === 'subject') return course.subject;
+      return '';
+    },
+  }));
 
   return (
     <div className="cr-layout">
@@ -105,28 +156,14 @@ export default function CourseRegistrationPage() {
             subjects={subjects}
           />
 
-          {rows.length === 0 ? (
-            <p className="cr-empty">No courses match your search.</p>
-          ) : (
-            <table className="cr-simple-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Name</th>
-                  <th>Section</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(({ course, section }) => (
-                  <tr key={section.id}>
-                    <td>{course.code}</td>
-                    <td>{course.title}</td>
-                    <td>{section.sectionNumber}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <CourseRegistrationTable
+            rows={rowsWithRender}
+            allColumns={columnsWithRender}
+            visibleCols={visibleCols}
+            toggleCol={toggleCol}
+            colPickerOpen={colPickerOpen}
+            setColPickerOpen={setColPickerOpen}
+          />
         </section>
       </main>
     </div>
