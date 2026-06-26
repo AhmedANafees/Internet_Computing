@@ -6,8 +6,8 @@ import { redirect } from 'react-router';
 
 export default function LoginForm() {
     const [inputs, setInputs] = useState({
-        email: 'teststudent@example.edu',
-        password: 'Password123!'
+        email: '',
+        password: ''
     });
     function handleChange(e) {
         const name = e.target.name;
