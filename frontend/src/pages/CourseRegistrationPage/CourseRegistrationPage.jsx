@@ -28,6 +28,8 @@ export default function CourseRegistrationPage() {
   const [colPickerOpen, setColPickerOpen] = useState(false);
   const [visibleCols, setVisibleCols] = useState(DEFAULT_VISIBLE);
   const [activeFilters, setActiveFilters] = useState({ faculties: [], levels: [], subjects: [] });
+  const [cart, setCart] = useState([]);
+  const [rowFeedback, setRowFeedback] = useState({});
   const search = useDebounce(searchRaw, 300);
 
   const terms = useMemo(() => [...new Set(mockCourses.flatMap((course) => course.sections.map((section) => section.term)))], []);
@@ -76,6 +78,28 @@ export default function CourseRegistrationPage() {
       }
       return next;
     });
+  }
+
+  const cartCourseIds = useMemo(() => new Set(cart.map((item) => item.course.id)), [cart]);
+
+  function addToCart(course, section) {
+    if (cartCourseIds.has(course.id)) {
+      setRowFeedback((prev) => ({ ...prev, [section.id]: 'duplicate' }));
+      window.setTimeout(() => {
+        setRowFeedback((prev) => {
+          const next = { ...prev };
+          delete next[section.id];
+          return next;
+        });
+      }, 1500);
+      return;
+    }
+
+    setCart((prev) => [...prev, { course, section }]);
+  }
+
+  function removeFromCart(courseId) {
+    setCart((prev) => prev.filter((item) => item.course.id !== courseId));
   }
 
   const rows = useMemo(() => {
@@ -163,7 +187,47 @@ export default function CourseRegistrationPage() {
             toggleCol={toggleCol}
             colPickerOpen={colPickerOpen}
             setColPickerOpen={setColPickerOpen}
+            cartCourseIds={cartCourseIds}
+            addToCart={addToCart}
+            removeFromCart={removeFromCart}
+            rowFeedback={rowFeedback}
           />
+
+          <div className="cr-cart-card">
+            <div className="cr-cart-header">
+              <h4>Registration Cart ({cart.length})</h4>
+              <span>{cart.reduce((sum, item) => sum + item.course.credits, 0).toFixed(1)} credits</span>
+            </div>
+
+            {cart.length === 0 ? (
+              <p className="cr-empty">No courses selected yet.</p>
+            ) : (
+              <table className="cr-simple-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Section</th>
+                    <th>Credits</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cart.map(({ course, section }) => (
+                    <tr key={section.id}>
+                      <td>{course.code}</td>
+                      <td>{course.title}</td>
+                      <td>{section.sectionNumber}</td>
+                      <td>{course.credits}</td>
+                      <td>
+                        <button className="cr-remove-btn" onClick={() => removeFromCart(course.id)}>Remove</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </section>
       </main>
     </div>

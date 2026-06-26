@@ -1,4 +1,15 @@
-export default function CourseRegistrationTable({ rows, allColumns, visibleCols, toggleCol, colPickerOpen, setColPickerOpen }) {
+export default function CourseRegistrationTable({
+  rows,
+  allColumns,
+  visibleCols,
+  toggleCol,
+  colPickerOpen,
+  setColPickerOpen,
+  cartCourseIds,
+  addToCart,
+  removeFromCart,
+  rowFeedback,
+}) {
   const visibleColumns = allColumns.filter((column) => visibleCols.has(column.id));
 
   return (
@@ -36,23 +47,43 @@ export default function CourseRegistrationTable({ rows, allColumns, visibleCols,
               {visibleColumns.map((column) => (
                 <th key={column.id}>{column.label}</th>
               ))}
+              <th>Add</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={visibleColumns.length} className="cr-table__empty">
+                <td colSpan={visibleColumns.length + 1} className="cr-table__empty">
                   No courses match your search or filters.
                 </td>
               </tr>
             ) : (
-              rows.map(({ course, section }) => (
-                <tr key={section.id}>
-                  {visibleColumns.map((column) => (
-                    <td key={column.id}>{column.render(course, section)}</td>
-                  ))}
-                </tr>
-              ))
+              rows.map(({ course, section }) => {
+                const inCart = cartCourseIds.has(course.id);
+                const feedback = rowFeedback[section.id];
+
+                return (
+                  <tr key={section.id}>
+                    {visibleColumns.map((column) => (
+                      <td key={column.id}>{column.render(course, section)}</td>
+                    ))}
+                    <td>
+                      <button
+                        className={`cr-add-btn ${inCart ? 'cr-add-btn--added' : ''} ${feedback === 'duplicate' ? 'cr-add-btn--warn' : ''}`}
+                        onClick={() => {
+                          if (inCart) {
+                            removeFromCart(course.id);
+                            return;
+                          }
+                          addToCart(course, section);
+                        }}
+                      >
+                        {feedback === 'duplicate' ? '!' : inCart ? '✓' : '+'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
