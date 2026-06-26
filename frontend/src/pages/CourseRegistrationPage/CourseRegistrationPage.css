@@ -154,6 +154,53 @@
   background: #efdede;
 }
 
+.cr-cart-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.cr-review-btn,
+.cr-submit-btn,
+.cr-back-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.cr-review-btn,
+.cr-submit-btn {
+  background: #9e7f7f;
+  color: #fff;
+}
+
+.cr-back-btn {
+  background: #e8d6d6;
+}
+
+.cr-result {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.cr-result--registered {
+  background: #d8f0da;
+  color: #1f5f29;
+}
+
+.cr-result--waitlisted {
+  background: #fff0cc;
+  color: #8a6700;
+}
+
+.cr-result--failed {
+  background: #ffd8d8;
+  color: #8a1f1f;
+}
+
 .cr-filter-top-row {
   display: flex;
   gap: 10px;

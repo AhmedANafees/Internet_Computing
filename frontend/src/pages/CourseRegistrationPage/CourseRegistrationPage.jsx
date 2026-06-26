@@ -30,6 +30,8 @@ export default function CourseRegistrationPage() {
   const [activeFilters, setActiveFilters] = useState({ faculties: [], levels: [], subjects: [] });
   const [cart, setCart] = useState([]);
   const [rowFeedback, setRowFeedback] = useState({});
+  const [reviewMode, setReviewMode] = useState(false);
+  const [submissionResults, setSubmissionResults] = useState([]);
   const search = useDebounce(searchRaw, 300);
 
   const terms = useMemo(() => [...new Set(mockCourses.flatMap((course) => course.sections.map((section) => section.term)))], []);
@@ -100,6 +102,23 @@ export default function CourseRegistrationPage() {
 
   function removeFromCart(courseId) {
     setCart((prev) => prev.filter((item) => item.course.id !== courseId));
+  }
+
+  function submitRegistration() {
+    const results = cart.map((item) => {
+      let status = 'registered';
+      if (item.section.seatsRemaining <= 0) status = 'failed';
+      else if (item.section.seatsRemaining < 3) status = 'waitlisted';
+
+      return {
+        ...item,
+        status,
+      };
+    });
+
+    setSubmissionResults(results);
+    setReviewMode(false);
+    setCart([]);
   }
 
   const rows = useMemo(() => {
@@ -180,18 +199,20 @@ export default function CourseRegistrationPage() {
             subjects={subjects}
           />
 
-          <CourseRegistrationTable
-            rows={rowsWithRender}
-            allColumns={columnsWithRender}
-            visibleCols={visibleCols}
-            toggleCol={toggleCol}
-            colPickerOpen={colPickerOpen}
-            setColPickerOpen={setColPickerOpen}
-            cartCourseIds={cartCourseIds}
-            addToCart={addToCart}
-            removeFromCart={removeFromCart}
-            rowFeedback={rowFeedback}
-          />
+          {!reviewMode && (
+            <CourseRegistrationTable
+              rows={rowsWithRender}
+              allColumns={columnsWithRender}
+              visibleCols={visibleCols}
+              toggleCol={toggleCol}
+              colPickerOpen={colPickerOpen}
+              setColPickerOpen={setColPickerOpen}
+              cartCourseIds={cartCourseIds}
+              addToCart={addToCart}
+              removeFromCart={removeFromCart}
+              rowFeedback={rowFeedback}
+            />
+          )}
 
           <div className="cr-cart-card">
             <div className="cr-cart-header">
@@ -199,7 +220,7 @@ export default function CourseRegistrationPage() {
               <span>{cart.reduce((sum, item) => sum + item.course.credits, 0).toFixed(1)} credits</span>
             </div>
 
-            {cart.length === 0 ? (
+            {!reviewMode && cart.length === 0 ? (
               <p className="cr-empty">No courses selected yet.</p>
             ) : (
               <table className="cr-simple-table">
@@ -227,7 +248,48 @@ export default function CourseRegistrationPage() {
                 </tbody>
               </table>
             )}
+
+            <div className="cr-cart-actions">
+              {!reviewMode ? (
+                <button className="cr-review-btn" disabled={cart.length === 0} onClick={() => setReviewMode(true)}>
+                  Review & Register
+                </button>
+              ) : (
+                <>
+                  <button className="cr-back-btn" onClick={() => setReviewMode(false)}>Back to Search</button>
+                  <button className="cr-submit-btn" onClick={submitRegistration}>Confirm Registration</button>
+                </>
+              )}
+            </div>
           </div>
+
+          {submissionResults.length > 0 && (
+            <div className="cr-cart-card">
+              <div className="cr-cart-header">
+                <h4>Submission Results</h4>
+              </div>
+              <table className="cr-simple-table">
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th>Section</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissionResults.map((item) => (
+                    <tr key={`${item.course.id}-${item.section.id}`}>
+                      <td>{item.course.code}</td>
+                      <td>{item.section.sectionNumber}</td>
+                      <td>
+                        <span className={`cr-result cr-result--${item.status}`}>{item.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </main>
     </div>
