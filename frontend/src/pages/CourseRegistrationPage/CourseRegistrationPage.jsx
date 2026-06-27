@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../../components/Sidebar/Sidebar';
 import CourseRegistrationPageHeader from '../../components/CourseRegistrationPage/CourseRegistrationPageHeader';
 import CourseRegistrationFilters from '../../components/CourseRegistrationPage/CourseRegistrationFilters';
 import CourseRegistrationTable from '../../components/CourseRegistrationPage/CourseRegistrationTable';
-import { mockCourses } from '../../data/mockCourses';
 import { useDebounce } from '../../hooks/useDebounce';
+import { fetchCourseCatalog, submitPlanRegistration } from '../../services/courseService';
 import './CourseRegistrationPage.css';
 
 const ALL_COLUMNS = [
@@ -32,12 +32,42 @@ export default function CourseRegistrationPage() {
   const [rowFeedback, setRowFeedback] = useState({});
   const [reviewMode, setReviewMode] = useState(false);
   const [submissionResults, setSubmissionResults] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [apiTerms, setApiTerms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState('');
   const search = useDebounce(searchRaw, 300);
 
-  const terms = useMemo(() => [...new Set(mockCourses.flatMap((course) => course.sections.map((section) => section.term)))], []);
-  const faculties = useMemo(() => [...new Set(mockCourses.map((course) => course.faculty))], []);
-  const levels = useMemo(() => [...new Set(mockCourses.map((course) => course.level))], []);
-  const subjects = useMemo(() => [...new Set(mockCourses.map((course) => course.subject))], []);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCatalog() {
+      setIsLoading(true);
+      setApiError('');
+
+      try {
+        const { courses: nextCourses, terms: nextTerms } = await fetchCourseCatalog();
+        if (cancelled) return;
+        setCourses(nextCourses);
+        setApiTerms(nextTerms);
+      } catch {
+        if (cancelled) return;
+        setApiError('Failed to load course catalog from backend.');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadCatalog();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const terms = useMemo(() => [...new Set([...apiTerms, ...courses.flatMap((course) => course.sections.map((section) => section.term))])], [apiTerms, courses]);
+  const faculties = useMemo(() => [...new Set(courses.map((course) => course.faculty))], [courses]);
+  const levels = useMemo(() => [...new Set(courses.map((course) => course.level))], [courses]);
+  const subjects = useMemo(() => [...new Set(courses.map((course) => course.subject))], [courses]);
 
   const chips = useMemo(() => {
     const next = [];
@@ -104,26 +134,28 @@ export default function CourseRegistrationPage() {
     setCart((prev) => prev.filter((item) => item.course.id !== courseId));
   }
 
-  function submitRegistration() {
-    const results = cart.map((item) => {
-      let status = 'registered';
-      if (item.section.seatsRemaining <= 0) status = 'failed';
-      else if (item.section.seatsRemaining < 3) status = 'waitlisted';
+  async function submitRegistration() {
+    try {
+      setApiError('');
+      const resultItems = await submitPlanRegistration(cart);
+      const resultMap = new Map(resultItems.map((item) => [String(item.crn), item.result]));
 
-      return {
+      const results = cart.map((item) => ({
         ...item,
-        status,
-      };
-    });
+        status: resultMap.get(String(item.section.id)) ?? 'failed',
+      }));
 
-    setSubmissionResults(results);
-    setReviewMode(false);
-    setCart([]);
+      setSubmissionResults(results);
+      setReviewMode(false);
+      setCart([]);
+    } catch (error) {
+      setApiError(error?.message ?? 'Registration submit failed.');
+    }
   }
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const allRows = mockCourses.flatMap((course) =>
+    const allRows = courses.flatMap((course) =>
       course.sections.map((section) => ({ course, section })),
     );
 
@@ -138,7 +170,7 @@ export default function CourseRegistrationPage() {
       if (activeFilters.subjects.length > 0 && !activeFilters.subjects.includes(course.subject)) return false;
       return true;
     });
-  }, [activeFilters, search, selectedTerm]);
+  }, [activeFilters, courses, search, selectedTerm]);
 
   const rowsWithRender = rows.map(({ course, section }) => ({
     course,
@@ -204,7 +236,10 @@ export default function CourseRegistrationPage() {
             subjects={subjects}
           />
 
-          {!reviewMode && (
+          {isLoading && <p className="cr-empty">Loading course catalog...</p>}
+          {apiError && <p className="cr-error">{apiError}</p>}
+
+          {!reviewMode && !isLoading && (
             <CourseRegistrationTable
               rows={rowsWithRender}
               allColumns={columnsWithRender}
@@ -262,7 +297,7 @@ export default function CourseRegistrationPage() {
               ) : (
                 <>
                   <button className="cr-back-btn" onClick={() => setReviewMode(false)}>Back to Search</button>
-                  <button className="cr-submit-btn" onClick={submitRegistration}>Confirm Registration</button>
+                  <button className="cr-submit-btn" onClick={submitRegistration} disabled={cart.length === 0}>Confirm Registration</button>
                 </>
               )}
             </div>

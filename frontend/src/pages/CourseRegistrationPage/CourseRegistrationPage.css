@@ -42,6 +42,12 @@
   color: #665454;
 }
 
+.cr-error {
+  color: #8a1f1f;
+  font-weight: 600;
+  margin: 8px 0;
+}
+
 .cr-simple-table {
   width: 100%;
   border-collapse: collapse;
