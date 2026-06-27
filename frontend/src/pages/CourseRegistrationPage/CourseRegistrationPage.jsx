@@ -154,7 +154,12 @@ export default function CourseRegistrationPage() {
       if (column.id === 'credits') return course.credits;
       if (column.id === 'instructor') return section.instructor;
       if (column.id === 'time') return section.schedule.map((slot) => `${slot.day} ${slot.startTime}-${slot.endTime}`).join(', ');
-      if (column.id === 'seats') return `${section.seatsRemaining} / ${section.seatsTotal}`;
+      if (column.id === 'seats') {
+        let seatClass = 'cr-seat-good';
+        if (section.seatsRemaining <= 0) seatClass = 'cr-seat-full';
+        else if (section.seatsRemaining < 4) seatClass = 'cr-seat-low';
+        return <span className={seatClass}>{section.seatsRemaining} / {section.seatsTotal}</span>;
+      }
       if (column.id === 'term') return section.term;
       if (column.id === 'subject') return course.subject;
       return '';

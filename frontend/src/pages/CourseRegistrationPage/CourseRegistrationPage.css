@@ -1188,3 +1188,72 @@
   from { transform: translateY(12px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
 }
+
+/* Phase 8 polish */
+.cr-layout {
+  background:
+    radial-gradient(circle at 16% 8%, #f7eaea 0, transparent 34%),
+    radial-gradient(circle at 92% 94%, #efe0e0 0, transparent 38%),
+    #f6f2f2;
+}
+
+.cr-card,
+.cr-table-card,
+.cr-cart-card {
+  box-shadow: 0 10px 24px rgba(90, 60, 60, 0.08);
+}
+
+.cr-chip,
+.cr-filter-active-chip {
+  background: #f4ecec;
+  border-color: #cfbdbd;
+}
+
+.cr-seat-good {
+  color: #1f6b34;
+  font-weight: 600;
+}
+
+.cr-seat-low {
+  color: #876200;
+  font-weight: 600;
+}
+
+.cr-seat-full {
+  color: #942626;
+  font-weight: 700;
+}
+
+.cr-add-btn--warn {
+  animation: cr-blink 0.32s ease 2;
+}
+
+.cr-submit-btn {
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes cr-blink {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.13);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 920px) {
+  .cr-main {
+    padding: 14px;
+  }
+
+  .cr-table {
+    min-width: 840px;
+  }
+
+  .cr-simple-table {
+    min-width: 620px;
+  }
+}
