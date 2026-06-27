@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap');
+
 .cr-layout {
   min-height: 100vh;
   display: grid;
@@ -209,8 +211,14 @@
 
 .cr-filter-top-row {
   display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+.cr-filter-wrap {
+  flex: 0 0 auto;
 }
 
 .cr-term-select,
@@ -260,7 +268,6 @@
   padding: 6px 12px;
   cursor: pointer;
 }
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap');
 
 /* ── Layout ─────────────────────────────────────────────────────────────────── */
 .cr-layout {
@@ -489,6 +496,12 @@
   gap: 16px;
 }
 
+.cr-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(170px, 1fr));
+  align-items: start;
+}
+
 .cr-filter-group {
   display: flex;
   flex-direction: column;
@@ -527,7 +540,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 10px 28px 0;
+  padding: 10px 0 0;
+  justify-content: flex-start;
+}
+
+.cr-chips-row--left {
+  justify-content: flex-start;
 }
 
 .cr-chip {
@@ -581,7 +599,7 @@
 
 /* ── Table card ──────────────────────────────────────────────────────────────── */
 .cr-table-card {
-  margin: 16px 28px 0;
+  margin: 16px 0 0;
   background: #fff;
   border-radius: 12px;
   border: 1.5px solid #e0e0e0;
@@ -786,7 +804,7 @@
 
 /* ── Cart card ───────────────────────────────────────────────────────────────── */
 .cr-cart-card {
-  margin: 16px 28px 0;
+  margin: 16px 0 0;
   background: #fff;
   border-radius: 12px;
   border: 1.5px solid #e0e0e0;
@@ -868,15 +886,17 @@
 }
 
 .cr-remove-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
-  color: #c62828;
+  background: #f4e4e4;
+  border: 1px solid #e2c8c8;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #9b2d2d;
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  width: auto;
-  height: auto;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -884,7 +904,7 @@
 
 .cr-remove-btn:hover {
   color: #7f1c1c;
-  background: none;
+  background: #edd7d7;
 }
 
 .cr-cart-footer {
@@ -1262,4 +1282,32 @@
   .cr-simple-table {
     min-width: 620px;
   }
+}
+
+/* Toolbar alignment override */
+.cr-toolbar-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.cr-toolbar-line .cr-search-wrap {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.cr-filters {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.cr-filters .cr-filter-top-row {
+  margin-bottom: 0;
+}
+
+.cr-filters .cr-chips-row {
+  margin-top: 8px;
+  margin-bottom: 0;
 }

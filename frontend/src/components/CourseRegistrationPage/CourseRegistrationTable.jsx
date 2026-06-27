@@ -5,7 +5,7 @@ export default function CourseRegistrationTable({
   toggleCol,
   colPickerOpen,
   setColPickerOpen,
-  cartCourseIds,
+  cartSectionKeys,
   addToCart,
   removeFromCart,
   rowFeedback,
@@ -59,11 +59,12 @@ export default function CourseRegistrationTable({
               </tr>
             ) : (
               rows.map(({ course, section }) => {
-                const inCart = cartCourseIds.has(course.id);
-                const feedback = rowFeedback[section.id];
+                const sectionKey = `${course.id}:${section.id}`;
+                const inCart = cartSectionKeys.has(sectionKey);
+                const feedback = rowFeedback[sectionKey];
 
                 return (
-                  <tr key={section.id}>
+                  <tr key={sectionKey}>
                     {visibleColumns.map((column) => (
                       <td key={column.id}>{column.render(course, section)}</td>
                     ))}
@@ -72,7 +73,7 @@ export default function CourseRegistrationTable({
                         className={`cr-add-btn ${inCart ? 'cr-add-btn--added' : ''} ${feedback === 'duplicate' ? 'cr-add-btn--warn' : ''}`}
                         onClick={() => {
                           if (inCart) {
-                            removeFromCart(course.id);
+                            removeFromCart(course.id, section.id);
                             return;
                           }
                           addToCart(course, section);

@@ -20,7 +20,6 @@ function parseAndFormatMeetingTimes(meetingTimesStr) {
   // Parse each schedule entry: "Monday 09:00-10:30, Tuesday 09:00-10:30, ..."
   const schedules = meetingTimesStr.split(',').map(s => s.trim()).filter(Boolean);
   const timeMap = {}; // { "09:00-10:30": [Monday, Tuesday, ...] }
-  const daySet = new Set();
 
   schedules.forEach((schedule) => {
     const match = schedule.match(/^(\w+)\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
@@ -29,7 +28,6 @@ function parseAndFormatMeetingTimes(meetingTimesStr) {
       const time = `${start}-${end}`;
       if (!timeMap[time]) timeMap[time] = [];
       timeMap[time].push(day);
-      daySet.add(day);
     }
   });
 
@@ -67,6 +65,30 @@ function normalizeSchedule(value) {
   return [];
 }
 
+function normalizeSection(section, sectionIndex, courseMeta) {
+  const capacity = Number(section.capacity ?? section.seatsTotal ?? 0);
+  const enrolledCount = Number(section.enrolled_count ?? section.enrolledCount ?? 0);
+  const remaining = Number(section.seats_remaining ?? section.seatsRemaining ?? capacity - enrolledCount);
+
+  return {
+    id: section.crn ?? section.section_id ?? `${courseMeta.code}-${section.section_number ?? sectionIndex + 1}`,
+    sectionNumber: section.section_number ?? section.section ?? `${sectionIndex + 1}`,
+    instructor: section.instructor_first_name || section.instructor_last_name
+      ? `${section.instructor_first_name ?? ''} ${section.instructor_last_name ?? ''}`.trim()
+      : (section.instructor_name ?? section.instructor ?? ''),
+    room: section.room_number ?? section.room ?? '',
+    campus: section.campus ?? 'Unknown',
+    seatsTotal: capacity,
+    seatsRemaining: remaining,
+    term: section.term_name ?? section.term ?? '',
+    status: section.status ?? 'Open',
+    deliveryMode: section.delivery_mode ?? section.deliveryMode ?? '',
+    schedule: normalizeSchedule(section.schedule),
+    meetingTimes: section.meeting_times ?? '',
+    daysOfWeek: extractDaysOfWeek(section.meeting_times ?? ''),
+  };
+}
+
 function normalizeSectionData(rawSections) {
   const sections = coerceArray(rawSections);
   const courseMap = {};
@@ -80,7 +102,12 @@ function normalizeSectionData(rawSections) {
         code,
         title: section.course_name ?? section.title ?? 'Untitled Course',
         subject: section.subject ?? (typeof code === 'string' ? code.split(/[^A-Za-z]/)[0].toUpperCase() : 'N/A'),
-        faculty: section.subject ?? section.faculty_name ?? section.faculty ?? 'Unknown',
+        faculty:
+          section.faculty_name
+          ?? section.faculty
+          ?? section.department_name
+          ?? section.subject
+          ?? (typeof code === 'string' ? code.split(/[^A-Za-z]/)[0].toUpperCase() : 'Unknown'),
         department: section.subject ?? section.department_name ?? section.department ?? '',
         level: Number(section.course_level ?? section.level ?? 0),
         credits: Number(section.credits ?? section.credit_hours ?? 0.5),
@@ -113,9 +140,7 @@ function normalizeSectionData(rawSections) {
       term: section.term_name ?? section.term ?? '',
       status: section.status ?? 'Open',
       deliveryMode: section.delivery_mode ?? section.deliveryMode ?? '',
-      schedule: Array.isArray(section.meeting_times) 
-        ? section.meeting_times 
-        : (section.schedule ?? []),
+      schedule: normalizeSchedule(section.schedule),
       meetingTimes: formattedTimes,
       daysOfWeek,
     });
@@ -180,7 +205,6 @@ export async function fetchCourseCatalog() {
   try {
     const termsResponse = await fetch(`${API_BASE}/terms`, {
       headers: { Accept: 'application/json' },
-      credentials: 'include',
     });
 
     if (termsResponse.ok) {
@@ -198,7 +222,6 @@ export async function fetchCourseCatalog() {
     try {
       const response = await fetch(endpoint, {
         headers: { Accept: 'application/json' },
-        credentials: 'include',
       });
 
       if (!response.ok) continue;
