@@ -1,11 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
-const NAV_ITEMS = [
+const DEFAULT_NAV_ITEMS = [
   { label: 'Course Registration', path: '/courses' },
 ];
 
-export default function Sidebar({ userName = 'Steve Smith' }) {
+export default function Sidebar({
+  userName = 'Steve Smith',
+  navItems = DEFAULT_NAV_ITEMS,
+}) {
   const navigate = useNavigate();
 
   return (
@@ -20,7 +23,7 @@ export default function Sidebar({ userName = 'Steve Smith' }) {
         </div>
 
         <nav className="sidebar__nav">
-          {NAV_ITEMS.map(({ label, path }) => (
+          {navItems.map(({ label, path }) => (
             <NavLink
               key={path}
               to={path}

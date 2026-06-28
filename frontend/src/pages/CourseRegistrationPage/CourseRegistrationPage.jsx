@@ -287,7 +287,10 @@ export default function CourseRegistrationPage() {
 
   return (
     <div className="cr-layout">
-      <Sidebar />
+      <Sidebar
+        userName="Steve Smith"
+        navItems={[{ label: 'Course Registration', path: '/courses' }]}
+      />
       <main className="cr-main">
         <CourseRegistrationPageHeader />
 
