@@ -30,7 +30,7 @@ const config = {
   isTest: nodeEnv === 'test',
 
   server: {
-    port: readInt('PORT', 3000),
+    port: readInt('PORT', 3001),
     corsOrigin: readString('CORS_ORIGIN', '*'),
   },
 
