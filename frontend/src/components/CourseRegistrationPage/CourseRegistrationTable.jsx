@@ -9,6 +9,7 @@ export default function CourseRegistrationTable({
   addToCart,
   removeFromCart,
   rowFeedback,
+  onRowClick,
 }) {
   const visibleColumns = allColumns.filter((column) => visibleCols.has(column.id));
 
@@ -64,14 +65,18 @@ export default function CourseRegistrationTable({
                 const feedback = rowFeedback[sectionKey];
 
                 return (
-                  <tr key={sectionKey}>
+                  <tr 
+                    key={sectionKey}
+                    onClick={() => onRowClick && onRowClick(course)}
+                    style={{ cursor: 'pointer' }}>
                     {visibleColumns.map((column) => (
                       <td key={column.id}>{column.render(course, section)}</td>
                     ))}
                     <td>
                       <button
                         className={`cr-add-btn ${inCart ? 'cr-add-btn--added' : ''} ${feedback === 'duplicate' ? 'cr-add-btn--warn' : ''}`}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (inCart) {
                             removeFromCart(course.id, section.id);
                             return;

@@ -7,6 +7,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { fetchCourseCatalog, submitPlanRegistration } from '../../services/courseService';
 import { mockCourses, mockTerms } from '../../data/mockCourses';
 import './CourseRegistrationPage.css';
+import CourseSummaryCard from '../../components/CourseSummaryCard';
 
 const ALL_COLUMNS = [
   { id: 'code', label: 'Code' },
@@ -58,6 +59,7 @@ export default function CourseRegistrationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [apiError, setApiError] = useState('');
   const search = useDebounce(searchRaw, 300);
+  const [selectedCourse, setSelectedCourse] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -349,6 +351,7 @@ export default function CourseRegistrationPage() {
               addToCart={addToCart}
               removeFromCart={removeFromCart}
               rowFeedback={rowFeedback}
+              onRowClick={(course) => setSelectedCourse(course)}
             />
           )}
 
@@ -434,6 +437,12 @@ export default function CourseRegistrationPage() {
             </div>
           )}
         </section>
+          {selectedCourse && (
+            <CourseSummaryCard
+              course={selectedCourse}
+              onClose={() => setSelectedCourse(null)}
+            />
+        )}
       </main>
     </div>
   );
