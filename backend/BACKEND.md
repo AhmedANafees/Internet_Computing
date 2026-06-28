@@ -54,8 +54,8 @@ npm start        # plain start
 
 Once running, check it is alive:
 
-- `GET http://localhost:3000/` returns basic API info
-- `GET http://localhost:3000/health` returns the database connection status
+- `GET http://localhost:3001/` returns basic API info
+- `GET http://localhost:3001/health` returns the database connection status
 
 `npm run db:seed` loads a sample dataset across three terms (a past term with
 completed courses, the current open-registration term, and a future term):
