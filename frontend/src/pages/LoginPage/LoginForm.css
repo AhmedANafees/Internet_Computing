@@ -1,163 +1,95 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 
-.login-shell {
-  width: min(1040px, 100%);
-}
-
-.login-card {
-  display: grid;
-  grid-template-columns: minmax(320px, 1.1fr) minmax(280px, 0.9fr);
-  min-height: 640px;
-  overflow: hidden;
-  border-radius: 28px;
-  background: #d8d6d6;
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.16);
-  color: #111;
+#login-container {
   font-family: 'Montserrat', sans-serif;
+  background-color: #d8d6d6;
+  min-width: 280px;
+  width: 60%;
+  height: 600px;
+  border: 3px solid black;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: black;
 }
 
-.login-form {
+#login-form {
+  border: none;
   display: flex;
-  padding: 40px;
-}
-
-.login-form fieldset {
-  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  height: 100%;
   flex: 1;
+}
+
+fieldset {
+  display: flex;
   flex-direction: column;
-  border: 0;
-  padding: 0;
+  text-align: left;
+  border: none;
+  padding: 20px 40px;
 }
 
-.login-form legend {
-  margin-bottom: 28px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  line-height: 1.35;
+form {
+  margin-top: 10%;
+  vertical-align: top;
+  width: 50%;
 }
 
-.login-form label {
-  margin: 10px 0 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.login-form input[type='text'],
-.login-form input[type='password'] {
-  height: 44px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  border-radius: 10px;
-  padding: 0 14px;
-  background: #fff;
-  color: #111;
-  font: inherit;
-}
-
-.login-form a {
-  margin-top: 12px;
-  color: #111;
-  font-size: 0.88rem;
-}
-
-.button-row {
+#button-row {
   display: flex;
-  gap: 12px;
-  margin-top: auto;
-  padding-top: 28px;
+  flex-direction: row;
+  justify-content: space-between;
+  padding-top: 10px;
 }
 
-.button-row button {
-  flex: 1;
-  min-height: 46px;
-  border: 0;
-  border-radius: 12px;
-  background: #9e7f7f;
-  color: #fff;
-  font: inherit;
-  font-weight: 600;
+button {
+  background-color: #9e7f7f;
+  color: white;
+  border: none;
+  width: 160px;
+  height: 40px;
+  border-radius: 5px;
+  padding: 8px;
   cursor: pointer;
 }
 
-.button-row button:hover {
-  filter: brightness(1.03);
+button:hover {
+  background-color: #9e7f7f;
 }
 
-.login-illustration {
-  position: relative;
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.64), transparent 24%),
-    linear-gradient(160deg, #5f4d4d 0%, #8d6f6f 52%, #b88f8f 100%);
+input[type='text'],
+input[type='password'] {
+  background-color: white;
+  border-radius: 5px;
+  color: black;
+  height: 36px;
 }
 
-.login-illustration::before,
-.login-illustration::after {
-  content: '';
-  position: absolute;
-  inset: auto;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+#login-image {
+  align-self: flex-end;
+  border-radius: 20px;
+  width: 50%;
+  max-width: 100%;
+  height: 100%;
 }
 
-.login-illustration::before {
-  top: 84px;
-  right: 56px;
-  width: 170px;
-  height: 170px;
+a {
+  font-size: 14px;
+  color: black;
 }
 
-.login-illustration::after {
-  left: 44px;
-  bottom: 56px;
-  width: 240px;
-  height: 240px;
+legend::first-line {
+  font-size: 14px;
 }
 
-.login-illustration__card {
-  position: absolute;
-  left: 32px;
-  right: 32px;
-  bottom: 32px;
-  z-index: 1;
-  border-radius: 24px;
-  padding: 28px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(12px);
-  color: #fff;
+legend {
+  font-size: 18px;
+  text-wrap-mode: nowrap;
 }
 
-.login-illustration__card span {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
-
-.login-illustration__card strong {
-  display: block;
-  font-size: 2rem;
-  line-height: 1.1;
-}
-
-@media (max-width: 880px) {
-  .login-card {
-    grid-template-columns: 1fr;
-  }
-
-  .login-illustration {
-    min-height: 220px;
-  }
-}
-
-@media (max-width: 640px) {
-  .login-page {
-    padding: 16px;
-  }
-
-  .login-form,
-  .login-illustration__card {
-    padding: 24px;
-  }
-
-  .button-row {
-    flex-direction: column;
-  }
+label {
+  font-size: 14px;
+  margin: 6px 0;
 }

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="dashboatd.css">
+</head>
+<body>
+  <div class="dashboard-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">
+          <div class="brand-mark">CH</div>
+          <div>
+            <h2>Campus Hub</h2>
+            <p>Student portal</p>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a class="active" href="#">Overview</a>
+          <a href="timetable.html">Timetable</a>
+          <a href="#">Assignments</a>
+          <a href="#">Messages</a>
+          <a href="#">Settings</a>
+        </nav>
+      </div>
+
+      <div class="sidebar-card">
+        <p class="eyebrow">Next up</p>
+        <h3>Web Design Lab</h3>
+        <p>Room 302 • 11:00 AM</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-title">
+          <p class="eyebrow">Student Dashboard</p>
+          <h1>Good morning, Maya</h1>
+        </div>
+        <div class="topbar-actions">
+          <div class="search-pill">Search classes</div>
+          <div class="profile-pill">
+            <span>MJ</span>
+            <strong>Maya</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Weekly progress</p>
+          <h2>You’re ahead of schedule</h2>
+          <p>Three assignments completed this week and two more due tomorrow.</p>
+          <div class="hero-actions">
+            <a class="primary-btn" href="timetable.html">Open timetable</a>
+            <a class="text-link" href="#">View planner</a>
+          </div>
+          <div class="progress-row">
+            <div class="progress-track"><span></span></div>
+            <small>82% of your weekly goal</small>
+          </div>
+        </div>
+        <div class="hero-metric">
+          <div class="ring">
+            <span>82%</span>
+            <small>completed</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <article class="stat-card accent-blue">
+          <div class="stat-icon">✦</div>
+          <p class="stat-label">Attendance</p>
+          <h3>94%</h3>
+          <span>+2% this month</span>
+        </article>
+        <article class="stat-card accent-green">
+          <div class="stat-icon">✓</div>
+          <p class="stat-label">Assignments</p>
+          <h3>7 due</h3>
+          <span>2 urgent today</span>
+        </article>
+        <article class="stat-card accent-purple">
+          <div class="stat-icon">◆</div>
+          <p class="stat-label">GPA</p>
+          <h3>3.8</h3>
+          <span>steady progress</span>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel">
+          <div class="panel-header">
+            <h3>Today’s classes</h3>
+            <a href="timetable.html">See all</a>
+          </div>
+          <ul class="class-list">
+            <li>
+              <div>
+                <strong>Programming I</strong>
+                <span>09:00 • Room 104</span>
+              </div>
+              <span class="pill">Live</span>
+            </li>
+            <li>
+              <div>
+                <strong>Calculus</strong>
+                <span>10:00 • Room 210</span>
+              </div>
+              <span class="pill pill-soft">Online</span>
+            </li>
+            <li>
+              <div>
+                <strong>Web Design</strong>
+                <span>11:00 • Room 302</span>
+              </div>
+              <span class="pill">Lab</span>
+            </li>
+          </ul>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h3>Focus tasks</h3>
+            <a href="#">Add</a>
+          </div>
+          <ul class="task-list">
+            <li>
+              <label>
+                <input type="checkbox" checked>
+                <span>Submit UI mockups</span>
+              </label>
+              <small>11:30</small>
+            </li>
+            <li>
+              <label>
+                <input type="checkbox">
+                <span>Review database notes</span>
+              </label>
+              <small>13:00</small>
+            </li>
+            <li>
+              <label>
+                <input type="checkbox">
+                <span>Prepare for physics quiz</span>
+              </label>
+              <small>16:00</small>
+            </li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

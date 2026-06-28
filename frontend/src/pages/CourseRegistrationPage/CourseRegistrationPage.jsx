@@ -60,6 +60,7 @@ export default function CourseRegistrationPage() {
   const [apiError, setApiError] = useState('');
   const search = useDebounce(searchRaw, 300);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourseInitialTerm, setSelectedCourseInitialTerm] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -164,6 +165,32 @@ export default function CourseRegistrationPage() {
     () => new Set(cart.map((item) => `${item.course.id}:${item.section.id}`)),
     [cart],
   );
+
+  function sectionMatchesNonTermFilters(course, section) {
+    const sectionDays = Array.isArray(section.daysOfWeek) && section.daysOfWeek.length > 0
+      ? section.daysOfWeek
+      : (Array.isArray(section.schedule) ? section.schedule.map((slot) => slot.day).filter(Boolean) : []);
+
+    if (activeFilters.faculties.length > 0 && !activeFilters.faculties.includes(course.faculty)) return false;
+    if (activeFilters.levels.length > 0 && !activeFilters.levels.includes(course.level)) return false;
+    if (activeFilters.subjects.length > 0 && !activeFilters.subjects.includes(course.subject)) return false;
+    if (activeFilters.campuses.length > 0 && !activeFilters.campuses.includes(section.campus)) return false;
+    if (activeFilters.deliveryModes.length > 0 && !activeFilters.deliveryModes.includes(section.deliveryMode)) return false;
+    if (activeFilters.days.length > 0 && !activeFilters.days.some((day) => sectionDays.includes(day))) return false;
+    return true;
+  }
+
+  function openCourseCard(course, section) {
+    const filteredSections = (course.sections || []).filter((item) => sectionMatchesNonTermFilters(course, item));
+    const sectionsForCard = filteredSections.length > 0 ? filteredSections : (course.sections || []);
+    const initialTerm = section?.term || selectedTerm || sectionsForCard[0]?.term || '';
+
+    setSelectedCourse({
+      ...course,
+      sections: sectionsForCard,
+    });
+    setSelectedCourseInitialTerm(initialTerm);
+  }
 
   function addToCart(course, section) {
     const sectionKey = `${course.id}:${section.id}`;
@@ -351,7 +378,7 @@ export default function CourseRegistrationPage() {
               addToCart={addToCart}
               removeFromCart={removeFromCart}
               rowFeedback={rowFeedback}
-              onRowClick={(course) => setSelectedCourse(course)}
+              onRowClick={(course, section) => openCourseCard(course, section)}
             />
           )}
 
@@ -379,13 +406,26 @@ export default function CourseRegistrationPage() {
                     </thead>
                     <tbody>
                       {cartByTerm[term].map(({ course, section }) => (
-                        <tr key={`${course.id}:${section.id}`}>
+                        <tr
+                          key={`${course.id}:${section.id}`}
+                          onClick={() => openCourseCard(course, section)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <td>{course.code}</td>
                           <td>{course.title}</td>
                           <td>{section.sectionNumber}</td>
                           <td>{course.credits}</td>
                           <td>
-                            <button className="cr-remove-btn" aria-label="Remove from cart" onClick={() => removeFromCart(course.id, section.id)}>-</button>
+                            <button
+                              className="cr-remove-btn"
+                              aria-label="Remove from cart"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                removeFromCart(course.id, section.id);
+                              }}
+                            >
+                              -
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -424,7 +464,11 @@ export default function CourseRegistrationPage() {
                 </thead>
                 <tbody>
                   {submissionResults.map((item) => (
-                    <tr key={`${item.course.id}-${item.section.id}`}>
+                    <tr
+                      key={`${item.course.id}-${item.section.id}`}
+                      onClick={() => openCourseCard(item.course, item.section)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <td>{item.course.code}</td>
                       <td>{item.section.sectionNumber}</td>
                       <td>
@@ -440,6 +484,8 @@ export default function CourseRegistrationPage() {
           {selectedCourse && (
             <CourseSummaryCard
               course={selectedCourse}
+              initialTerm={selectedCourseInitialTerm}
+              onAddSection={(section) => addToCart(selectedCourse, section)}
               onClose={() => setSelectedCourse(null)}
             />
         )}
