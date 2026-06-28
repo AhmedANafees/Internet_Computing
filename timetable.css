@@ -1,0 +1,128 @@
+:root {
+  --bg: #f4f6fb;
+  --panel: #ffffff;
+  --text: #162033;
+  --muted: #6b7280;
+  --border: #e6e9ef;
+  --accent: #4361ee;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 30px 20px 40px;
+}
+
+.schedule-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.schedule-meta {
+  display: flex;
+  gap: 10px;
+}
+
+.chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chip-success {
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.timetable {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.timetable th,
+.timetable td {
+  border: 1px solid var(--border);
+  padding: 10px;
+  text-align: left;
+  vertical-align: top;
+  height: 78px;
+}
+
+.timetable thead th {
+  background: #f8fafc;
+  font-size: 0.9rem;
+  color: #55606f;
+}
+
+.timetable tbody th {
+  width: 86px;
+  background: #fcfdff;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.slot {
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: white;
+  min-height: 58px;
+}
+
+.slot strong { display:block; margin-bottom: 3px; }
+.slot small { display:block; opacity: 0.92; }
+
+.slot.blue { background: linear-gradient(135deg, #4f7cff, #3b82f6); }
+.slot.green { background: linear-gradient(135deg, #2bbf8a, #14b8a6); }
+.slot.orange { background: linear-gradient(135deg, #f7a24a, #f59e0b); }
+.slot.red { background: linear-gradient(135deg, #fb6a6a, #ef4444); }
+.slot.purple { background: linear-gradient(135deg, #9b7cff, #8b5cf6); }
+.slot.teal { background: linear-gradient(135deg, #0ea5a4, #0f766e); }
+
+@media (max-width: 700px) {
+  .schedule-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
