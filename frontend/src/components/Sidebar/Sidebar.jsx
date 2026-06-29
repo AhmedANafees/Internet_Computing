@@ -5,6 +5,7 @@ import './Sidebar.css';
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Course Registration', path: '/courses' },
+  { label: 'Timetable', path: '/timetable' },
 ];
 
 function getStoredUserName() {

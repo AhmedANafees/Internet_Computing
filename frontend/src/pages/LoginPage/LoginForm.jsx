@@ -122,7 +122,7 @@ export default function LoginForm() {
             <a href=''>Forgot my password</a>
             <div id='button-row'>
               <button type='submit' id='login-student'>Sign In As Student</button>
-              <button type='button' id='login-admin'>Sign In As Admin</button>
+              <button type='submit' id='login-admin'>Sign In As Admin</button>
             </div>
           </fieldset>
         </form>

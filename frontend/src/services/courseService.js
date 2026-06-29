@@ -315,3 +315,27 @@ export async function submitPlanRegistration(cartItems) {
 
   return results;
 }
+
+export async function fetchStudentEnrollments(studentId) {
+  const response = await fetch(`${API_BASE}/students/${studentId}/enrollments`, {
+    headers: getJsonHeaders(true),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.message ?? 'Failed to fetch enrollments.');
+  }
+  const payload = await response.json();
+  return coerceArray(payload?.data ?? payload);
+}
+
+export async function dropEnrollment(enrollmentId) {
+  const response = await fetch(`${API_BASE}/enrollments/${enrollmentId}`, {
+    method: 'DELETE',
+    headers: getJsonHeaders(true),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.message ?? 'Failed to drop enrollment.');
+  }
+  return true;
+}

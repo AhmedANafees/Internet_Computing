@@ -5,6 +5,8 @@ import './index.css';
 import LoginPage from './pages/LoginPage/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage/DashboardPage.jsx';
 import CourseRegistrationPage from './pages/CourseRegistrationPage/CourseRegistrationPage.jsx';
+import TimetablePage from './pages/TimetablePage/TimetablePage.jsx';
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -13,6 +15,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/" element={<LoginPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/courses" element={<CourseRegistrationPage />} />
+        <Route path="/timetable" element={<TimetablePage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
