@@ -31,18 +31,21 @@ repo.findProfile = (studentId) =>
 
 // weekly schedule of registered sections, one row per meeting. enrollment_id is
 // included so the timetable can drop a course (US-06, US-08, US-16).
-repo.findSchedule = (studentId) =>
+repo.findSchedule = (studentId, termId = null) =>
   db.query(
-    `SELECT e.enrollment_id, c.course_code, c.course_name, cs.crn, cs.section_number,
-            sch.day_of_week, sch.start_time, sch.end_time, r.building, r.room_number, r.campus
+`SELECT e.enrollment_id, c.course_code, c.course_name, cs.crn, cs.section_number,
+            sch.day_of_week, sch.start_time, sch.end_time, r.building, r.room_number, r.campus,
+            t.term_id, t.term_name, t.year, t.semester
        FROM Enrollments e
        JOIN CourseSections cs ON cs.crn = e.crn
        JOIN Courses c ON c.course_id = cs.course_id
        JOIN ClassSchedule sch ON sch.crn = cs.crn
        LEFT JOIN Rooms r ON r.room_id = cs.room_id
-      WHERE e.student_id = ? AND e.status = 'Registered'
-      ORDER BY ${DAY_ORDER}, sch.start_time`,
-    [studentId]
+       LEFT JOIN AcademicTerms t ON t.term_id = cs.term_id
+      WHERE e.student_id = ? 
+        AND (? IS NULL OR cs.term_id = ?)
+      ORDER BY t.year DESC, ${DAY_ORDER}, sch.start_time`,
+    [studentId, termId, termId]
   );
 
 repo.findEnrollments = (studentId) =>

@@ -67,7 +67,7 @@ export default function CourseRegistrationTable({
                 return (
                   <tr 
                     key={sectionKey}
-                    onClick={() => onRowClick && onRowClick(course)}
+                    onClick={() => onRowClick && onRowClick(course, section)}
                     style={{ cursor: 'pointer' }}>
                     {visibleColumns.map((column) => (
                       <td key={column.id}>{column.render(course, section)}</td>

@@ -1,10 +1,28 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+function normalizeApiBase(rawValue) {
+  const trimmed = String(rawValue || '').trim().replace(/\/$/, '');
+  if (!trimmed) return 'http://localhost:3001';
+  return trimmed.replace(/\/api$/i, '');
+}
+
+const API_ROOT = normalizeApiBase(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
+const API_BASE = `${API_ROOT}/api`;
 const CANDIDATE_ENDPOINTS = [
   `${API_BASE}/sections`,
   `${API_BASE}/courses`,
   `${API_BASE}/course-catalog`,
   `${API_BASE}/courses/all`,
 ];
+
+function getJsonHeaders(includeAuth = false) {
+  const headers = { Accept: 'application/json' };
+  if (includeAuth) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
 
 function coerceArray(value) {
   return Array.isArray(value) ? value : [];
@@ -204,7 +222,7 @@ export async function fetchCourseCatalog() {
 
   try {
     const termsResponse = await fetch(`${API_BASE}/terms`, {
-      headers: { Accept: 'application/json' },
+      headers: getJsonHeaders(true),
     });
 
     if (termsResponse.ok) {
@@ -221,7 +239,7 @@ export async function fetchCourseCatalog() {
   for (const endpoint of CANDIDATE_ENDPOINTS) {
     try {
       const response = await fetch(endpoint, {
-        headers: { Accept: 'application/json' },
+        headers: getJsonHeaders(true),
       });
 
       if (!response.ok) continue;
@@ -248,34 +266,76 @@ export async function fetchCourseCatalog() {
 }
 
 export async function submitPlanRegistration(cartItems) {
-  const planId = Number(import.meta.env.VITE_ACTIVE_PLAN_ID ?? 1);
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('Please sign in to register courses.');
+  }
+
+  const results = [];
+  let firstFailureMessage = '';
 
   for (const item of cartItems) {
     const crn = Number(item.section.id);
     if (!Number.isFinite(crn)) continue;
 
-    await fetch(`${API_BASE}/plans/${planId}/items`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ crn }),
-    });
+    try {
+      const response = await fetch(`${API_BASE}/enrollments`, {
+        method: 'POST',
+        headers: {
+          ...getJsonHeaders(true),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ crn }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      const resultValue = payload?.data?.result;
+
+      if (!response.ok) {
+        if (!firstFailureMessage) {
+          firstFailureMessage = payload?.message ?? `Could not register CRN ${crn}.`;
+        }
+        results.push({ crn, result: resultValue || 'failed' });
+        continue;
+      }
+
+      results.push({ crn, result: resultValue || 'registered' });
+    } catch {
+      if (!firstFailureMessage) {
+        firstFailureMessage = `Could not register CRN ${crn}.`;
+      }
+      results.push({ crn, result: 'failed' });
+    }
   }
 
-  const response = await fetch(`${API_BASE}/plans/${planId}/submit`, {
-    method: 'POST',
-    headers: { Accept: 'application/json' },
-    credentials: 'include',
+  const hasSuccess = results.some((item) => item.result === 'registered' || item.result === 'waitlisted');
+  if (!hasSuccess && firstFailureMessage) {
+    throw new Error(firstFailureMessage);
+  }
+
+  return results;
+}
+
+export async function fetchStudentEnrollments(studentId) {
+  const response = await fetch(`${API_BASE}/students/${studentId}/enrollments`, {
+    headers: getJsonHeaders(true),
   });
-
-  const payload = await response.json().catch(() => ({}));
-
   if (!response.ok) {
-    throw new Error(payload?.message ?? 'Could not submit registration plan.');
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.message ?? 'Failed to fetch enrollments.');
   }
+  const payload = await response.json();
+  return coerceArray(payload?.data ?? payload);
+}
 
-  return Array.isArray(payload?.data?.items) ? payload.data.items : [];
+export async function dropEnrollment(enrollmentId) {
+  const response = await fetch(`${API_BASE}/enrollments/${enrollmentId}`, {
+    method: 'DELETE',
+    headers: getJsonHeaders(true),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.message ?? 'Failed to drop enrollment.');
+  }
+  return true;
 }

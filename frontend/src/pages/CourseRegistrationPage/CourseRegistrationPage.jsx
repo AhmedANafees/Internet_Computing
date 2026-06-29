@@ -4,7 +4,7 @@ import CourseRegistrationPageHeader from '../../components/CourseRegistrationPag
 import CourseRegistrationFilters from '../../components/CourseRegistrationPage/CourseRegistrationFilters';
 import CourseRegistrationTable from '../../components/CourseRegistrationPage/CourseRegistrationTable';
 import { useDebounce } from '../../hooks/useDebounce';
-import { fetchCourseCatalog, submitPlanRegistration } from '../../services/courseService';
+import { fetchCourseCatalog, submitPlanRegistration, fetchStudentEnrollments, dropEnrollment } from '../../services/courseService';
 import { mockCourses, mockTerms } from '../../data/mockCourses';
 import './CourseRegistrationPage.css';
 import CourseSummaryCard from '../../components/CourseSummaryCard';
@@ -60,6 +60,7 @@ export default function CourseRegistrationPage() {
   const [apiError, setApiError] = useState('');
   const search = useDebounce(searchRaw, 300);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourseInitialTerm, setSelectedCourseInitialTerm] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -96,6 +97,87 @@ export default function CourseRegistrationPage() {
   }, []);
 
   const terms = useMemo(() => [...new Set([...apiTerms, ...courses.flatMap((course) => course.sections.map((section) => section.term))])], [apiTerms, courses]);
+
+  // When the selected term changes, load the student's enrollments for that term into the cart
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEnrollments() {
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        const studentId = currentUser?.studentId ?? currentUser?.student_id;
+        if (!studentId) return;
+
+        const enrollments = await fetchStudentEnrollments(studentId);
+        if (cancelled) return;
+
+        // When no term is selected (All Terms), show all active enrollments grouped by term
+        const termEnrollments = enrollments.filter(
+          (e) =>
+            e.status && e.status.toLowerCase() !== 'dropped' &&
+            (!selectedTerm || e.term_name === selectedTerm)
+        );
+
+        const cartItems = termEnrollments.map((e) => {
+          // Try to match against the loaded course catalog
+          let courseObj = null;
+          let sectionObj = null;
+          for (const c of courses) {
+            const sec = c.sections.find((s) => String(s.id) === String(e.crn));
+            if (sec) {
+              courseObj = c;
+              sectionObj = sec;
+              break;
+            }
+          }
+          // Fallback: build lightweight objects from enrollment data
+          if (!courseObj) {
+            courseObj = {
+              id: e.course_id,
+              code: e.course_code,
+              title: e.course_name,
+              credits: Number(e.credits ?? 0),
+              subject: '',
+              faculty: '',
+              department: '',
+              level: 0,
+              description: '',
+              prerequisites: [],
+              sections: [],
+            };
+          }
+          if (!sectionObj) {
+            sectionObj = {
+              id: e.crn,
+              sectionNumber: e.section_number,
+              term: e.term_name,
+              instructor: '',
+              room: '',
+              campus: '',
+              seatsTotal: 0,
+              seatsRemaining: 0,
+              status: 'Open',
+              deliveryMode: '',
+              meetingTimes: '',
+              schedule: [],
+              daysOfWeek: [],
+            };
+          }
+          return { course: courseObj, section: sectionObj, enrollmentId: e.enrollment_id };
+        });
+
+        setCart(cartItems);
+      } catch {
+        // Silently fail — cart stays empty if enrollments can't be loaded
+      }
+    }
+
+    loadEnrollments();
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTerm, courses]);
   const faculties = useMemo(
     () => [...new Set(courses.map((course) => course.faculty).filter(Boolean))],
     [courses],
@@ -165,6 +247,32 @@ export default function CourseRegistrationPage() {
     [cart],
   );
 
+  function sectionMatchesNonTermFilters(course, section) {
+    const sectionDays = Array.isArray(section.daysOfWeek) && section.daysOfWeek.length > 0
+      ? section.daysOfWeek
+      : (Array.isArray(section.schedule) ? section.schedule.map((slot) => slot.day).filter(Boolean) : []);
+
+    if (activeFilters.faculties.length > 0 && !activeFilters.faculties.includes(course.faculty)) return false;
+    if (activeFilters.levels.length > 0 && !activeFilters.levels.includes(course.level)) return false;
+    if (activeFilters.subjects.length > 0 && !activeFilters.subjects.includes(course.subject)) return false;
+    if (activeFilters.campuses.length > 0 && !activeFilters.campuses.includes(section.campus)) return false;
+    if (activeFilters.deliveryModes.length > 0 && !activeFilters.deliveryModes.includes(section.deliveryMode)) return false;
+    if (activeFilters.days.length > 0 && !activeFilters.days.some((day) => sectionDays.includes(day))) return false;
+    return true;
+  }
+
+  function openCourseCard(course, section) {
+    const filteredSections = (course.sections || []).filter((item) => sectionMatchesNonTermFilters(course, item));
+    const sectionsForCard = filteredSections.length > 0 ? filteredSections : (course.sections || []);
+    const initialTerm = section?.term || selectedTerm || sectionsForCard[0]?.term || '';
+
+    setSelectedCourse({
+      ...course,
+      sections: sectionsForCard,
+    });
+    setSelectedCourseInitialTerm(initialTerm);
+  }
+
   function addToCart(course, section) {
     const sectionKey = `${course.id}:${section.id}`;
 
@@ -184,7 +292,13 @@ export default function CourseRegistrationPage() {
   }
 
   function removeFromCart(courseId, sectionId) {
-    setCart((prev) => prev.filter((item) => !(item.course.id === courseId && item.section.id === sectionId)));
+    const item = cart.find((i) => i.course.id === courseId && i.section.id === sectionId);
+    if (item?.enrollmentId) {
+      dropEnrollment(item.enrollmentId).catch((err) => {
+        setApiError(err?.message ?? 'Failed to drop enrollment.');
+      });
+    }
+    setCart((prev) => prev.filter((i) => !(i.course.id === courseId && i.section.id === sectionId)));
   }
 
   async function submitRegistration() {
@@ -351,7 +465,7 @@ export default function CourseRegistrationPage() {
               addToCart={addToCart}
               removeFromCart={removeFromCart}
               rowFeedback={rowFeedback}
-              onRowClick={(course) => setSelectedCourse(course)}
+              onRowClick={(course, section) => openCourseCard(course, section)}
             />
           )}
 
@@ -379,13 +493,26 @@ export default function CourseRegistrationPage() {
                     </thead>
                     <tbody>
                       {cartByTerm[term].map(({ course, section }) => (
-                        <tr key={`${course.id}:${section.id}`}>
+                        <tr
+                          key={`${course.id}:${section.id}`}
+                          onClick={() => openCourseCard(course, section)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <td>{course.code}</td>
                           <td>{course.title}</td>
                           <td>{section.sectionNumber}</td>
                           <td>{course.credits}</td>
                           <td>
-                            <button className="cr-remove-btn" aria-label="Remove from cart" onClick={() => removeFromCart(course.id, section.id)}>-</button>
+                            <button
+                              className="cr-remove-btn"
+                              aria-label="Remove from cart"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                removeFromCart(course.id, section.id);
+                              }}
+                            >
+                              -
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -424,7 +551,11 @@ export default function CourseRegistrationPage() {
                 </thead>
                 <tbody>
                   {submissionResults.map((item) => (
-                    <tr key={`${item.course.id}-${item.section.id}`}>
+                    <tr
+                      key={`${item.course.id}-${item.section.id}`}
+                      onClick={() => openCourseCard(item.course, item.section)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <td>{item.course.code}</td>
                       <td>{item.section.sectionNumber}</td>
                       <td>
@@ -440,6 +571,8 @@ export default function CourseRegistrationPage() {
           {selectedCourse && (
             <CourseSummaryCard
               course={selectedCourse}
+              initialTerm={selectedCourseInitialTerm}
+              onAddSection={(section) => addToCart(selectedCourse, section)}
               onClose={() => setSelectedCourse(null)}
             />
         )}
