@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+/* ── Dashboard-consistent page shell ── */
+.tt-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  padding: 20px;
+  font-family: 'Montserrat', sans-serif;
+  background:
+    radial-gradient(circle at 16% 8%, #f7eaea 0, transparent 34%),
+    radial-gradient(circle at 92% 94%, #efe0e0 0, transparent 38%),
+    #f6f2f2;
+}
+
+.tt-main {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ── Header bar ── */
+.tt-header {
+  background-color: #9e7f7f;
+  padding: 28px 36px 24px; /* Matched exactly to .cr-header */
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(90, 60, 60, 0.08);
+}
+
+.tt-header__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  font-family: 'Montserrat', sans-serif; 
+}
+
+/* ── Body wrapper ── */
+.tt-body {
+  padding: 0;
+}
+
+/* ── Schedule card (matches .cr-card) ── */
+.schedule-card {
+  background: #ffffff;
+  border: 1px solid #e5dada;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 24px rgba(90, 60, 60, 0.08);
+  box-sizing: border-box;
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.header-left-spacer {
+  flex: 1;
+}
+
+.schedule-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-align: center;
+}
+
+/* ── Card Controls ── */
+.schedule-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+/* Matches .cr-term-select */
+.schedule-term-select {
+  height: 40px;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  background: #fff;
+  color: #1a1a1a;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 130px;
+}
+
+.schedule-term-select:focus {
+  border-color: #9e7f7f;
+}
+
+/* Matches .cr-chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  background: #f4ecec;
+  border: 1px solid #cfbdbd;
+  border-radius: 20px;
+  padding: 4px 10px 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5a4040;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.chip-success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
+/* ── Table (Matches .cr-table-card & .cr-table) ── */
+.table-wrap {
+  overflow-x: auto;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+}
+
+.timetable {
+  width: 100%;
+  min-width: 680px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.timetable th,
+.timetable td {
+  border: 1px solid #e0e0e0;
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  height: 52px;
+  box-sizing: border-box;
+}
+
+.timetable thead th {
+  background: #f4f4f4;
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  text-align: center;
+  height: auto;
+  padding: 10px 8px;
+  border-top: none;
+}
+
+/* Clean up outer borders to prevent double borders in the rounded wrapper */
+.timetable thead th:first-child { border-left: none; }
+.timetable thead th:last-child { border-right: none; }
+.timetable tbody th:first-child { border-left: none; }
+.timetable tbody td:last-child { border-right: none; }
+.timetable tr:last-child td, .timetable tr:last-child th { border-bottom: none; }
+
+
+/* The Time Column */
+.timetable .time-col {
+  width: 65px;
+  background: #fafafa;
+  color: #222;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* ── Course slots ── */
+.slot {
+  border-radius: 8px;
+  padding: 6px 8px;
+  color: white;
+  height: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+.slot strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.slot small {
+  display: block;
+  font-size: 10px;
+  opacity: 0.95;
+}
+
+.slot.blue   { background: linear-gradient(135deg, #4f7cff, #3b82f6); }
+.slot.green  { background: linear-gradient(135deg, #2bbf8a, #14b8a6); }
+.slot.orange { background: linear-gradient(135deg, #f7a24a, #f59e0b); }
+.slot.red    { background: linear-gradient(135deg, #fb6a6a, #ef4444); }
+.slot.purple { background: linear-gradient(135deg, #9b7cff, #8b5cf6); }
+.slot.teal   { background: linear-gradient(135deg, #0ea5a4, #0f766e); }
+
+/* ── Media Queries (Matching .cr-layout breakpoints) ── */
+@media (max-width: 920px) {
+  .tt-layout {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .tt-main {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .schedule-header {
+    flex-direction: column;
+    align-items: center;
+  }
+  .header-left-spacer {
+    display: none;
+  }
+  .schedule-meta {
+    justify-content: center;
+  }
+}
