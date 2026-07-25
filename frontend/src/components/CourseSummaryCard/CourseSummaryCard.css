@@ -76,6 +76,7 @@
 .csc-seats.ok   { color: #16a34a; }
 .csc-seats.low  { color: #d97706; }
 .csc-seats.full { color: #dc2626; }
+.csc-seats.unknown { color: #6b7280; }
 .csc-footer { padding: 14px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
 .csc-hint { font-size: 12px; color: #999; }
 .csc-add-btn { background: #8B6E6E; color: white; border: none; padding: 9px 22px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }

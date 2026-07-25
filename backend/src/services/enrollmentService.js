@@ -21,6 +21,7 @@ service.get = async (id) => {
 service.findRaw = (id) => repo.findById(id);
 
 service.register = (studentId, crn) => registrationService.registerSection(studentId, crn);
+service.registerBatch = (studentId, crns) => registrationService.registerBatch(studentId, crns);
 service.drop = (studentId, crn) => registrationService.dropSection(studentId, crn);
 service.swap = (studentId, fromCrn, toCrn) =>
   registrationService.swapSection(studentId, fromCrn, toCrn);

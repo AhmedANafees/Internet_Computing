@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../../components/Sidebar/Sidebar';
+import CourseSummaryCard from '../../components/CourseSummaryCard';
+import { fetchCourseDetail } from '../../services/courseService';
 import './TimetablePage.css';
 
 const API_ROOT = normalizeApiBase(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
 const API_BASE = `${API_ROOT}/api`;
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const DEFAULT_HOURS = { minHour: 8, maxHour: 17 };
+const SLOT_CLASSES = ['blue', 'green', 'orange', 'red', 'purple', 'teal'];
 function normalizeApiBase(rawValue) {
   const trimmed = String(rawValue || '').trim().replace(/\/$/, '');
   if (!trimmed) return 'http://localhost:3001';
@@ -46,6 +49,14 @@ function formatTimeLabel(timeValue) {
   return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
 }
 
+function toNullableNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function buildRoomLabel(row) {
   const roomParts = [row.building, row.room_number].filter(Boolean);
   if (roomParts.length > 0) {
@@ -54,14 +65,15 @@ function buildRoomLabel(row) {
   return row.campus || 'TBA';
 }
 
-function hashColor(key) {
-  const palette = ['blue', 'green', 'orange', 'red', 'purple', 'teal'];
-  const text = String(key || '');
-  let hash = 0;
-  for (let index = 0; index < text.length; index += 1) {
-    hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
-  }
-  return palette[hash % palette.length];
+function buildClassColorMap(rows) {
+  const uniqueClassKeys = [...new Set(rows.map((row) => row.classKey).filter(Boolean))].sort();
+  const colorMap = new Map();
+
+  uniqueClassKeys.forEach((key, index) => {
+    colorMap.set(key, SLOT_CLASSES[index % SLOT_CLASSES.length]);
+  });
+
+  return colorMap;
 }
 
 function buildTermLabel(row) {
@@ -121,9 +133,14 @@ function normalizeScheduleRow(row) {
   const startHour = parseTimeToHour(row.start_time);
   const endHour = parseTimeToHour(row.end_time);
   const termLabel = buildTermLabel(row);
+  const courseCode = String(row.course_code || '').trim();
+  const courseName = String(row.course_name || '').trim();
+  const courseKey = courseCode || courseName || String(row.course_id || row.crn || '').trim();
 
   return {
+    enrollmentId: row.enrollment_id,
     crn: row.crn,
+    courseId: row.course_id,
     termId: row.term_id !== null && row.term_id !== undefined ? String(row.term_id) : '',
     term: termLabel,
     day: normalizeDay(row.day_of_week),
@@ -131,10 +148,14 @@ function normalizeScheduleRow(row) {
     endHour,
     startLabel: formatTimeLabel(row.start_time),
     endLabel: formatTimeLabel(row.end_time),
-    title: row.course_code || row.course_name || 'Registered Course',
-    subtitle: row.course_name || '',
+    title: courseCode || courseName || 'Registered Course',
+    subtitle: courseName && courseCode ? courseName : '',
+    sectionNumber: row.section_number,
     room: buildRoomLabel(row),
-    color: hashColor(`${row.course_code}-${row.crn}-${row.day_of_week}`),
+    seatsTotal: toNullableNumber(row.capacity),
+    seatsRemaining: toNullableNumber(row.seats_remaining),
+    courseKey,
+    classKey: String(row.crn ?? `${courseKey}-${row.day}-${row.start_time}`),
   };
 }
 
@@ -144,6 +165,8 @@ const TimetablePage = () => {
   const [terms, setTerms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedCourseInitialTerm, setSelectedCourseInitialTerm] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -246,6 +269,101 @@ const TimetablePage = () => {
 
   const hours = Array.from({ length: maxHour - minHour + 1 }, (_, i) => minHour + i);
   const currentTermLabel = terms.find((term) => term.value === selectedTermId)?.label || '';
+  const classColors = useMemo(() => buildClassColorMap(visibleRows), [visibleRows]);
+
+  async function openTimetableCourse(entry) {
+    const createFallbackCourse = () => ({
+      id: entry.courseId,
+      code: entry.title,
+      title: entry.subtitle || entry.title,
+      credits: 0,
+      subject: '',
+      faculty: '',
+      department: '',
+      level: 0,
+      description: '',
+      prerequisites: [],
+      sections: [
+        {
+          id: entry.crn,
+          sectionNumber: entry.sectionNumber,
+          term: entry.term,
+          instructor: '',
+          room: entry.room,
+          campus: '',
+          seatsTotal: entry.seatsTotal,
+          seatsRemaining: entry.seatsRemaining,
+          status: 'Registered',
+          deliveryMode: '',
+          meetingTimes: `${entry.startLabel}-${entry.endLabel}`,
+          schedule: [],
+          daysOfWeek: [entry.day].filter(Boolean),
+        },
+      ],
+    });
+
+    try {
+      const detail = await fetchCourseDetail(entry.courseId);
+      if (!detail) {
+        setSelectedCourse(createFallbackCourse());
+        setSelectedCourseInitialTerm(entry.term);
+        return;
+      }
+
+      const normalizedDetail = {
+        code: detail.course_code ?? detail.courseCode ?? detail.code ?? entry.title,
+        title: (detail.course_name ?? detail.courseName ?? detail.title ?? entry.subtitle) || entry.title,
+        description: detail.course_description ?? detail.description ?? detail.courseDescription ?? '',
+        faculty: detail.faculty_name ?? detail.faculty ?? '',
+        department: detail.department_name ?? detail.department ?? '',
+        level: Number(detail.course_level ?? detail.level ?? 0),
+        credits: Number(detail.credits ?? detail.credit_hours ?? detail.creditHours ?? 0),
+        prerequisites: Array.isArray(detail.prerequisites) ? detail.prerequisites : [],
+        antirequisites: Array.isArray(detail.antirequisites) ? detail.antirequisites : [],
+        corequisites: Array.isArray(detail.corequisites) ? detail.corequisites : [],
+      };
+
+      const normalizedSections = Array.isArray(detail.sections)
+        ? detail.sections.map((section) => ({
+            id: section.crn ?? section.section_id ?? section.id ?? entry.crn,
+            sectionNumber: section.section_number ?? section.section ?? section.id ?? entry.sectionNumber,
+            term: section.term_name ?? section.term ?? entry.term,
+            instructor: section.instructor_first_name || section.instructor_last_name
+              ? `${section.instructor_first_name ?? ''} ${section.instructor_last_name ?? ''}`.trim()
+              : section.instructor_name ?? section.instructor ?? '',
+            room: section.room_number ?? section.room ?? entry.room,
+            campus: section.campus ?? 'Unknown',
+            seatsTotal: toNullableNumber(section.capacity ?? section.seatsTotal),
+            seatsRemaining: toNullableNumber(
+              section.seats_remaining
+              ?? section.seatsRemaining
+              ?? (() => {
+                const capacity = toNullableNumber(section.capacity ?? section.seatsTotal);
+                const enrolled = toNullableNumber(section.enrolled_count ?? section.enrolledCount);
+                if (capacity === null || enrolled === null) return null;
+                return capacity - enrolled;
+              })()
+            ),
+            status: section.status ?? 'Registered',
+            deliveryMode: section.delivery_mode ?? section.deliveryMode ?? '',
+            meetingTimes: section.meeting_times ?? `${entry.startLabel}-${entry.endLabel}`,
+            schedule: Array.isArray(section.schedule) ? section.schedule : [],
+            daysOfWeek: Array.isArray(section.daysOfWeek)
+              ? section.daysOfWeek
+              : extractDaysOfWeek(section.meeting_times ?? `${entry.day}`),
+          }))
+        : [];
+
+      setSelectedCourse({
+        ...normalizedDetail,
+        sections: normalizedSections.length > 0 ? normalizedSections : createFallbackCourse().sections,
+      });
+      setSelectedCourseInitialTerm(entry.term);
+    } catch {
+      setSelectedCourse(createFallbackCourse());
+      setSelectedCourseInitialTerm(entry.term);
+    }
+  }
 
   return (
     <div className="tt-layout">
@@ -259,7 +377,6 @@ const TimetablePage = () => {
         <div className="tt-body">
           <section className="schedule-card">
             <div className="schedule-header">
-              {/* Invisible spacer to balance the flexbox and perfectly center the title */}
               <div className="header-left-spacer" />
               
               <h2 className="schedule-title">{currentTermLabel} Schedule</h2>
@@ -307,7 +424,12 @@ const TimetablePage = () => {
                           return (
                             <td key={`${day}-${hour}`}>
                               {entries.map((entry) => (
-                                <div key={`${entry.crn}-${entry.day}-${entry.startHour}`} className={`slot ${entry.color}`}>
+                                <div
+                                  key={`${entry.crn}-${entry.day}-${entry.startHour}`}
+                                  className={`slot ${classColors.get(entry.classKey) || 'blue'}`}
+                                  onClick={() => openTimetableCourse(entry)}
+                                  style={{ cursor: 'pointer' }}
+                                >
                                   <strong>{entry.title}</strong>
                                   <small>{entry.room}</small>
                                 </div>
@@ -324,6 +446,14 @@ const TimetablePage = () => {
           </section>
         </div>
       </div>
+      {selectedCourse && (
+        <CourseSummaryCard
+          course={selectedCourse}
+          initialTerm={selectedCourseInitialTerm}
+          mode="timetable"
+          onClose={() => setSelectedCourse(null)}
+        />
+      )}
     </div>
   );
 };

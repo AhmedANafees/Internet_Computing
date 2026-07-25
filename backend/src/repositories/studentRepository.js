@@ -33,16 +33,18 @@ repo.findProfile = (studentId) =>
 // included so the timetable can drop a course (US-06, US-08, US-16).
 repo.findSchedule = (studentId, termId = null) =>
   db.query(
-`SELECT e.enrollment_id, c.course_code, c.course_name, cs.crn, cs.section_number,
+`SELECT e.enrollment_id, c.course_id, c.course_code, c.course_name, cs.crn, cs.section_number,
+            cs.capacity, cs.enrolled_count, (cs.capacity - cs.enrolled_count) AS seats_remaining,
             sch.day_of_week, sch.start_time, sch.end_time, r.building, r.room_number, r.campus,
-            t.term_id, t.term_name, t.year, t.semester
+            t.term_id, t.term_name, t.year, t.semester, t.start_date, t.end_date
        FROM Enrollments e
        JOIN CourseSections cs ON cs.crn = e.crn
        JOIN Courses c ON c.course_id = cs.course_id
        JOIN ClassSchedule sch ON sch.crn = cs.crn
        LEFT JOIN Rooms r ON r.room_id = cs.room_id
        LEFT JOIN AcademicTerms t ON t.term_id = cs.term_id
-      WHERE e.student_id = ? 
+      WHERE e.student_id = ?
+        AND LOWER(e.status) IN ('registered', 'enrolled', 'active')
         AND (? IS NULL OR cs.term_id = ?)
       ORDER BY t.year DESC, ${DAY_ORDER}, sch.start_time`,
     [studentId, termId, termId]
@@ -52,12 +54,14 @@ repo.findEnrollments = (studentId) =>
   db.query(
     `SELECT e.enrollment_id, e.status, e.final_grade, e.enrollment_date,
             cs.crn, cs.section_number,
-            c.course_id, c.course_code, c.course_name, c.credits, t.term_name
+            c.course_id, c.course_code, c.course_name, c.credits,
+            t.term_id, t.term_name, t.year, t.semester, t.start_date, t.end_date
        FROM Enrollments e
        JOIN CourseSections cs ON cs.crn = e.crn
        JOIN Courses c ON c.course_id = cs.course_id
        LEFT JOIN AcademicTerms t ON t.term_id = cs.term_id
       WHERE e.student_id = ?
+        AND LOWER(e.status) IN ('registered', 'enrolled', 'active')
       ORDER BY t.year DESC, c.course_code`,
     [studentId]
   );

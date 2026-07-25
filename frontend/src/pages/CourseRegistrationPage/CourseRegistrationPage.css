@@ -168,6 +168,15 @@
   gap: 8px;
 }
 
+.cr-unenroll-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: #d87272;
+  color: #fff;
+}
+
 .cr-review-btn,
 .cr-submit-btn,
 .cr-back-btn {
@@ -207,6 +216,16 @@
 .cr-result--failed {
   background: #ffd8d8;
   color: #8a1f1f;
+}
+
+.cr-result--unchanged {
+  background: #e8d6d6;
+  color: #5a4040;
+}
+
+.cr-result--dropped {
+  background: #ffe7cc;
+  color: #8a4b00;
 }
 
 .cr-filter-top-row {
@@ -855,6 +874,15 @@
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
+  margin-left: 8px;
+}
+
+.cr-cart-badge--registered {
+  background: #2e7d32;
+}
+
+.cr-cart-badge--new {
+  background: #0288d1;
 }
 
 .cr-cart-header__credits {

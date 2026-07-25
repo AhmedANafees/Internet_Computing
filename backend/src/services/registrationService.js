@@ -140,6 +140,112 @@ async function isRegisteredInCourse(studentId, courseId, options = {}) {
   return row !== null;
 }
 
+async function getLinkedLabCrns(crn, executor = db.pool) {
+  const [rows] = await executor.execute('SELECT crn FROM CourseSections WHERE parent_crn = ?', [crn]);
+  return rows;
+}
+
+function normalizePendingCrns(crns) {
+  if (!Array.isArray(crns)) return new Set();
+  return new Set(crns.map((value) => Number(value)).filter(Number.isFinite));
+}
+
+async function hasConflictingCourseRegistration(studentId, section, options = {}) {
+  const pendingCrns = normalizePendingCrns(options.pendingCrns);
+  const existingRows = await db.query(
+    `SELECT e.crn, cs.parent_crn
+       FROM Enrollments e
+       JOIN CourseSections cs ON cs.crn = e.crn
+      WHERE e.student_id = ?
+        AND cs.course_id = ?
+        AND e.status = ?
+        AND e.crn <> ?`,
+    [studentId, section.course_id, ENROLLMENT.REGISTERED, section.crn]
+  );
+
+  const lectureParent = section.parent_crn ? Number(section.parent_crn) : null;
+  const linkedLabs = await getLinkedLabCrns(section.crn);
+  const linkedLabCrns = new Set(linkedLabs.map((lab) => Number(lab.crn)));
+
+  const pendingRows = pendingCrns.size > 0
+    ? await db.query(
+        `SELECT crn, course_id, parent_crn
+           FROM CourseSections
+          WHERE crn IN (${[...pendingCrns].map(() => '?').join(', ')})`,
+        [...pendingCrns]
+      )
+    : [];
+
+  const sameCoursePendingRows = pendingRows.filter(
+    (row) => Number(row.course_id) === Number(section.course_id) && Number(row.crn) !== Number(section.crn)
+  );
+
+  const sectionIsLab = Boolean(lectureParent);
+
+  for (const row of existingRows) {
+    const rowCrn = Number(row.crn);
+    if (sectionIsLab && rowCrn === lectureParent) {
+      continue;
+    }
+    if (!sectionIsLab && linkedLabCrns.has(rowCrn)) {
+      continue;
+    }
+    return true;
+  }
+
+  for (const pending of sameCoursePendingRows) {
+    const pendingCrn = Number(pending.crn);
+    if (sectionIsLab && pendingCrn === lectureParent) {
+      continue;
+    }
+    if (!sectionIsLab && Number(pending.parent_crn) === Number(section.crn)) {
+      continue;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+async function getRegisteredLabForLecture(studentId, lectureCrn, options = {}) {
+  const labs = await getLinkedLabCrns(lectureCrn);
+  if (!labs || labs.length === 0) {
+    return false;
+  }
+
+  const pendingCrns = normalizePendingCrns(options.pendingCrns);
+  if (labs.some((lab) => pendingCrns.has(Number(lab.crn)))) {
+    return true;
+  }
+
+  const params = [studentId, ENROLLMENT.REGISTERED, ...labs.map((lab) => lab.crn)];
+  const placeholders = labs.map(() => '?').join(', ');
+  const row = await db.queryOne(
+    `SELECT 1 FROM Enrollments WHERE student_id = ? AND status = ? AND crn IN (${placeholders}) LIMIT 1`,
+    params
+  );
+  return row !== null;
+}
+
+async function getRegisteredLectureForLab(studentId, labCrn, options = {}) {
+  const pendingCrns = normalizePendingCrns(options.pendingCrns);
+
+  const lab = await db.queryOne('SELECT parent_crn FROM CourseSections WHERE crn = ?', [labCrn]);
+  if (!lab || !lab.parent_crn) {
+    return false;
+  }
+
+  if (pendingCrns.has(Number(lab.parent_crn))) {
+    return true;
+  }
+
+  const row = await db.queryOne(
+    'SELECT 1 FROM Enrollments WHERE student_id = ? AND status = ? AND crn = ? LIMIT 1',
+    [studentId, ENROLLMENT.REGISTERED, lab.parent_crn]
+  );
+  return row !== null;
+}
+
 async function getActiveHold(studentId) {
   return db.queryOne(
     'SELECT hold_id, hold_type, reason FROM Holds WHERE student_id = ? AND active = TRUE LIMIT 1',
@@ -167,9 +273,10 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function registerSection(studentId, crn) {
+async function registerSection(studentId, crn, options = {}) {
+  const pendingCrns = normalizePendingCrns(options.pendingCrns);
   const section = await db.queryOne(
-    `SELECT cs.crn, cs.course_id, cs.status,
+    `SELECT cs.crn, cs.course_id, cs.status, cs.parent_crn,
             t.registration_open_date, t.registration_close_date
        FROM CourseSections cs
        LEFT JOIN AcademicTerms t ON t.term_id = cs.term_id
@@ -181,8 +288,17 @@ async function registerSection(studentId, crn) {
     return { result: RESULT.FAILED, reason: 'Section not found' };
   }
 
+  const currentEnrollment = await db.queryOne(
+    'SELECT status FROM Enrollments WHERE student_id = ? AND crn = ? LIMIT 1',
+    [studentId, crn]
+  );
+  if (currentEnrollment && currentEnrollment.status === ENROLLMENT.REGISTERED) {
+    return { result: RESULT.REGISTERED, reason: 'Already enrolled' };
+  }
+
+  const executor = options.executor || db.pool;
   const fail = async (reason) => {
-    await recordAttempt(db.pool, studentId, crn, RESULT.FAILED, reason);
+    await recordAttempt(executor, studentId, crn, RESULT.FAILED, reason);
     return { result: RESULT.FAILED, reason };
   };
 
@@ -202,12 +318,27 @@ async function registerSection(studentId, crn) {
     return fail('Active hold on account');
   }
 
-  if (await isRegisteredInCourse(studentId, section.course_id)) {
+  if (await hasConflictingCourseRegistration(studentId, section, { pendingCrns })) {
     return fail('Already registered in this course');
   }
 
   if ((await getMissingPrerequisites(studentId, section.course_id)).length > 0) {
     return fail('Prerequisite not met');
+  }
+
+  const linkedLabs = await getLinkedLabCrns(crn);
+  if (linkedLabs.length > 0) {
+    const hasLab = await getRegisteredLabForLecture(studentId, crn, { pendingCrns });
+    if (!hasLab) {
+      return fail('This course requires a linked lab section to be registered. Add the lab section too.');
+    }
+  }
+
+  if (section.parent_crn) {
+    const hasLecture = await getRegisteredLectureForLab(studentId, crn, { pendingCrns });
+    if (!hasLecture) {
+      return fail('This lab requires registration in its parent lecture section first.');
+    }
   }
 
   if ((await getBlockingAntirequisites(studentId, section.course_id)).length > 0) {
@@ -251,24 +382,36 @@ async function registerSection(studentId, crn) {
     }
 
     const [existing] = await conn.execute(
-      'SELECT enrollment_id FROM Enrollments WHERE student_id = ? AND crn = ?',
+      'SELECT enrollment_id, status FROM Enrollments WHERE student_id = ? AND crn = ?',
       [studentId, crn]
     );
     if (existing.length > 0) {
-      await conn.execute(
-        'UPDATE Enrollments SET status = ?, enrollment_date = ?, final_grade = NULL WHERE enrollment_id = ?',
-        [ENROLLMENT.REGISTERED, today, existing[0].enrollment_id]
-      );
+      const currentStatus = existing[0].status;
+      if (currentStatus !== ENROLLMENT.REGISTERED) {
+        await conn.execute(
+          'UPDATE Enrollments SET status = ?, enrollment_date = ?, final_grade = NULL WHERE enrollment_id = ?',
+          [ENROLLMENT.REGISTERED, today, existing[0].enrollment_id]
+        );
+        await conn.execute(
+          'UPDATE CourseSections SET enrolled_count = enrolled_count + 1 WHERE crn = ?',
+          [crn]
+        );
+      } else {
+        await conn.execute(
+          'UPDATE Enrollments SET enrollment_date = ? WHERE enrollment_id = ?',
+          [today, existing[0].enrollment_id]
+        );
+      }
     } else {
       await conn.execute(
         'INSERT INTO Enrollments (student_id, crn, enrollment_date, status) VALUES (?, ?, ?, ?)',
         [studentId, crn, today, ENROLLMENT.REGISTERED]
       );
+      await conn.execute(
+        'UPDATE CourseSections SET enrolled_count = enrolled_count + 1 WHERE crn = ?',
+        [crn]
+      );
     }
-    await conn.execute(
-      'UPDATE CourseSections SET enrolled_count = enrolled_count + 1 WHERE crn = ?',
-      [crn]
-    );
     await recordAttempt(conn, studentId, crn, RESULT.REGISTERED, null);
     await recordAudit(conn, studentId, crn, 'REGISTER', 'Registered for section');
     return { result: RESULT.REGISTERED };
@@ -288,14 +431,50 @@ async function registerPlan(studentId, planId) {
     'SELECT crn FROM CoursePlanItems WHERE plan_id = ? ORDER BY date_added ASC',
     [planId]
   );
+  const pendingCrns = items.map((item) => item.crn);
 
   const results = [];
   for (const item of items) {
     // eslint-disable-next-line no-await-in-loop
-    const outcome = await registerSection(studentId, item.crn);
+    const outcome = await registerSection(studentId, item.crn, { pendingCrns });
     results.push({ crn: item.crn, ...outcome });
   }
   return { items: results };
+}
+
+async function registerBatch(studentId, crns) {
+  if (!Array.isArray(crns)) {
+    throw ApiError.badRequest('crns must be an array');
+  }
+  const uniqueCrns = [...new Set(crns.map((value) => Number(value)).filter(Number.isFinite))];
+  if (uniqueCrns.length === 0) {
+    throw ApiError.badRequest('crns must contain at least one valid section identifier');
+  }
+
+  const pendingConflicts = await findConflicts(uniqueCrns);
+  if (pendingConflicts.length > 0) {
+    return uniqueCrns.map((crn) => {
+      const conflictingCrns = pendingConflicts
+        .filter((pair) => pair.crnA === crn || pair.crnB === crn)
+        .map((pair) => (pair.crnA === crn ? pair.crnB : pair.crnA));
+      return {
+        crn,
+        result: RESULT.FAILED,
+        reason: 'Time conflict with another selected section',
+        conflictingCrns,
+      };
+    });
+  }
+
+  return db.withTransaction(async (conn) => {
+    const results = [];
+    for (const crn of uniqueCrns) {
+      // eslint-disable-next-line no-await-in-loop
+      const outcome = await registerSection(studentId, crn, { pendingCrns: uniqueCrns, executor: conn });
+      results.push({ crn, ...outcome });
+    }
+    return results;
+  });
 }
 
 async function dropSection(studentId, crn) {
@@ -425,6 +604,7 @@ module.exports = {
   isRegisteredInCourse,
   getActiveHold,
   registerSection,
+  registerBatch,
   registerPlan,
   dropSection,
   swapSection,

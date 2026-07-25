@@ -16,6 +16,14 @@ export default function CourseSummaryCard({
   const normalizedCredits = Number(course?.credits);
   const displayCredits = Number.isFinite(normalizedCredits) && normalizedCredits > 0 ? normalizedCredits : 'N/A';
 
+  function toNullableNumber(value) {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
   if (!course) return null;
 
   const prereqsMet = !course.prerequisites || course.prerequisites.length === 0;
@@ -53,6 +61,29 @@ export default function CourseSummaryCard({
     () => visibleSections.find((section) => section.id === selectedCrn) || null,
     [selectedCrn, visibleSections],
   );
+
+  const selectedLecture = useMemo(() => {
+    if (!selectedSection || !selectedSection.parentCrn) return null;
+    return course.sections.find((section) => String(section.id) === String(selectedSection.parentCrn));
+  }, [course.sections, selectedSection]);
+
+  const lectureSectionsWithLabs = useMemo(() => {
+    return new Set(
+      (course.sections || [])
+        .filter((section) => section.parentCrn)
+        .map((section) => String(section.parentCrn)),
+    );
+  }, [course.sections]);
+
+  const linkedLabSections = useMemo(() => {
+    if (!selectedSection) return [];
+    return course.sections.filter((section) => String(section.parentCrn) === String(selectedSection.id));
+  }, [course.sections, selectedSection]);
+
+  useEffect(() => {
+    if (selectedCrn || visibleSections.length === 0) return;
+    setSelectedCrn(visibleSections[0].id);
+  }, [selectedCrn, visibleSections]);
 
   return (
     <div className="csc-overlay" onClick={onClose}>
@@ -133,9 +164,17 @@ export default function CourseSummaryCard({
             </thead>
             <tbody>
               {visibleSections.map(sec => {
-                const remaining = sec.seatsRemaining ?? 0;
-                const full = remaining <= 0;
+                const remaining = toNullableNumber(sec.seatsRemaining);
+                const total = toNullableNumber(sec.seatsTotal);
+                const seatsKnown = remaining !== null && total !== null;
+                const full = seatsKnown ? remaining <= 0 : false;
                 const isSelected = selectedCrn === sec.id;
+                const seatText = seatsKnown
+                  ? (full ? 'Full' : `${remaining} / ${total}`)
+                  : (isTimetableMode && String(sec.status || '').toLowerCase() === 'registered' ? 'Registered' : 'N/A');
+                const seatClass = seatsKnown
+                  ? (full ? 'full' : remaining <= 10 ? 'low' : 'ok')
+                  : 'unknown';
                 return (
                   <tr
                     key={sec.id}
@@ -145,20 +184,37 @@ export default function CourseSummaryCard({
                       setSelectedCrn(isSelected ? null : sec.id);
                     }}
                   >
-                    <td>{sec.sectionNumber}</td>
+                    <td>
+                      {sec.sectionNumber}
+                      {sec.parentCrn ? (
+                        <span className="csc-pill neutral" style={{ marginLeft: 8 }}>Lab</span>
+                      ) : lectureSectionsWithLabs.has(String(sec.id)) ? (
+                        <span className="csc-pill met" style={{ marginLeft: 8 }}>Linked Lab Required</span>
+                      ) : null}
+                    </td>
                     <td>{sec.instructor}</td>
                     <td>{sec.meetingTimes || '-'}</td>
                     <td>{sec.deliveryMode || '-'}</td>
                     <td>{sec.room || '-'}</td>
                     <td>{sec.campus || '-'}</td>
-                    <td className={`csc-seats ${full ? 'full' : remaining <= 10 ? 'low' : 'ok'}`}>
-                      {full ? 'Full' : `${remaining} / ${sec.seatsTotal}`}
+                    <td className={`csc-seats ${seatClass}`}>
+                      {seatText}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          {selectedSection && selectedSection.parentCrn && (
+            <p className="csc-hint">
+              This section is a lab/tutorial linked to lecture {selectedLecture?.sectionNumber ?? selectedSection.parentCrn}. Add the lecture section first and then add this lab to complete registration.
+            </p>
+          )}
+          {selectedSection && !selectedSection.parentCrn && linkedLabSections.length > 0 && (
+            <p className="csc-hint">
+              This lecture has {linkedLabSections.length} linked lab/tutorial section{linkedLabSections.length === 1 ? '' : 's'}. Add the lecture and one of its labs together.
+            </p>
+          )}
         </div>
 
         {!isTimetableMode ? (
@@ -172,7 +228,7 @@ export default function CourseSummaryCard({
                 onClose();
               }}
             >
-              Add to cart
+              Register
             </button>
           </div>
         ) : null}

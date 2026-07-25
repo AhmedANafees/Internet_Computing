@@ -104,6 +104,7 @@ function normalizeSection(section, sectionIndex, courseMeta) {
     schedule: normalizeSchedule(section.schedule),
     meetingTimes: section.meeting_times ?? '',
     daysOfWeek: extractDaysOfWeek(section.meeting_times ?? ''),
+    parentCrn: section.parent_crn ?? section.parentCrn ?? null,
   };
 }
 
@@ -265,55 +266,55 @@ export async function fetchCourseCatalog() {
   };
 }
 
+function extractErrorMessage(payload, fallback) {
+  if (!payload || typeof payload !== 'object') return fallback;
+  return payload?.error?.message ?? payload?.message ?? fallback;
+}
+
+export async function fetchCourseDetail(courseId) {
+  const response = await fetch(`${API_BASE}/courses/${courseId}`, {
+    headers: getJsonHeaders(true),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(payload, 'Failed to fetch course details.'));
+  }
+
+  const payload = await response.json();
+  return payload?.data ?? null;
+}
+
 export async function submitPlanRegistration(cartItems) {
   const token = localStorage.getItem('token');
   if (!token) {
     throw new Error('Please sign in to register courses.');
   }
 
-  const results = [];
-  let firstFailureMessage = '';
+  const crns = cartItems
+    .map((item) => Number(item.section.id))
+    .filter((crn) => Number.isFinite(crn));
 
-  for (const item of cartItems) {
-    const crn = Number(item.section.id);
-    if (!Number.isFinite(crn)) continue;
-
-    try {
-      const response = await fetch(`${API_BASE}/enrollments`, {
-        method: 'POST',
-        headers: {
-          ...getJsonHeaders(true),
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ crn }),
-      });
-
-      const payload = await response.json().catch(() => ({}));
-      const resultValue = payload?.data?.result;
-
-      if (!response.ok) {
-        if (!firstFailureMessage) {
-          firstFailureMessage = payload?.message ?? `Could not register CRN ${crn}.`;
-        }
-        results.push({ crn, result: resultValue || 'failed' });
-        continue;
-      }
-
-      results.push({ crn, result: resultValue || 'registered' });
-    } catch {
-      if (!firstFailureMessage) {
-        firstFailureMessage = `Could not register CRN ${crn}.`;
-      }
-      results.push({ crn, result: 'failed' });
-    }
+  if (crns.length === 0) {
+    return [];
   }
 
-  const hasSuccess = results.some((item) => item.result === 'registered' || item.result === 'waitlisted');
-  if (!hasSuccess && firstFailureMessage) {
-    throw new Error(firstFailureMessage);
+  const response = await fetch(`${API_BASE}/enrollments/batch`, {
+    method: 'POST',
+    headers: {
+      ...getJsonHeaders(true),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ crns }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const reason = extractErrorMessage(payload, 'Failed to register selected courses.');
+    throw new Error(reason);
   }
 
-  return results;
+  return Array.isArray(payload?.data) ? payload.data : [];
 }
 
 export async function fetchStudentEnrollments(studentId) {
@@ -322,7 +323,7 @@ export async function fetchStudentEnrollments(studentId) {
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.message ?? 'Failed to fetch enrollments.');
+    throw new Error(extractErrorMessage(payload, 'Failed to fetch enrollments.'));
   }
   const payload = await response.json();
   return coerceArray(payload?.data ?? payload);
@@ -335,7 +336,7 @@ export async function dropEnrollment(enrollmentId) {
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload?.message ?? 'Failed to drop enrollment.');
+    throw new Error(extractErrorMessage(payload, 'Failed to drop enrollment.'));
   }
   return true;
 }

@@ -9,6 +9,7 @@ const router = express.Router();
 
 router.get('/', authenticate, authorize('admin'), enrollmentController.list);
 router.get('/:id', authenticate, enrollmentController.getById);
+router.post('/batch', authenticate, enrollmentController.registerBatch);
 router.post('/', authenticate, enrollmentController.register);
 router.delete('/:id', authenticate, enrollmentController.drop);
 router.put('/:id', authenticate, authorize('admin'), enrollmentController.update);
