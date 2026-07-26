@@ -1,10 +1,28 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+function normalizeApiBase(rawValue) {
+  const trimmed = String(rawValue || '').trim().replace(/\/$/, '');
+  if (!trimmed) return 'http://localhost:3001';
+  return trimmed.replace(/\/api$/i, '');
+}
+
+const API_ROOT = normalizeApiBase(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
+const API_BASE = `${API_ROOT}/api`;
 const CANDIDATE_ENDPOINTS = [
   `${API_BASE}/sections`,
   `${API_BASE}/courses`,
   `${API_BASE}/course-catalog`,
   `${API_BASE}/courses/all`,
 ];
+
+function getJsonHeaders(includeAuth = false) {
+  const headers = { Accept: 'application/json' };
+  if (includeAuth) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
 
 function coerceArray(value) {
   return Array.isArray(value) ? value : [];
@@ -86,6 +104,7 @@ function normalizeSection(section, sectionIndex, courseMeta) {
     schedule: normalizeSchedule(section.schedule),
     meetingTimes: section.meeting_times ?? '',
     daysOfWeek: extractDaysOfWeek(section.meeting_times ?? ''),
+    parentCrn: section.parent_crn ?? section.parentCrn ?? null,
   };
 }
 
@@ -204,7 +223,7 @@ export async function fetchCourseCatalog() {
 
   try {
     const termsResponse = await fetch(`${API_BASE}/terms`, {
-      headers: { Accept: 'application/json' },
+      headers: getJsonHeaders(true),
     });
 
     if (termsResponse.ok) {
@@ -221,7 +240,7 @@ export async function fetchCourseCatalog() {
   for (const endpoint of CANDIDATE_ENDPOINTS) {
     try {
       const response = await fetch(endpoint, {
-        headers: { Accept: 'application/json' },
+        headers: getJsonHeaders(true),
       });
 
       if (!response.ok) continue;
@@ -247,35 +266,77 @@ export async function fetchCourseCatalog() {
   };
 }
 
-export async function submitPlanRegistration(cartItems) {
-  const planId = Number(import.meta.env.VITE_ACTIVE_PLAN_ID ?? 1);
+function extractErrorMessage(payload, fallback) {
+  if (!payload || typeof payload !== 'object') return fallback;
+  return payload?.error?.message ?? payload?.message ?? fallback;
+}
 
-  for (const item of cartItems) {
-    const crn = Number(item.section.id);
-    if (!Number.isFinite(crn)) continue;
+export async function fetchCourseDetail(courseId) {
+  const response = await fetch(`${API_BASE}/courses/${courseId}`, {
+    headers: getJsonHeaders(true),
+  });
 
-    await fetch(`${API_BASE}/plans/${planId}/items`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({ crn }),
-    });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(payload, 'Failed to fetch course details.'));
   }
 
-  const response = await fetch(`${API_BASE}/plans/${planId}/submit`, {
+  const payload = await response.json();
+  return payload?.data ?? null;
+}
+
+export async function submitPlanRegistration(cartItems) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('Please sign in to register courses.');
+  }
+
+  const crns = cartItems
+    .map((item) => Number(item.section.id))
+    .filter((crn) => Number.isFinite(crn));
+
+  if (crns.length === 0) {
+    return [];
+  }
+
+  const response = await fetch(`${API_BASE}/enrollments/batch`, {
     method: 'POST',
-    headers: { Accept: 'application/json' },
-    credentials: 'include',
+    headers: {
+      ...getJsonHeaders(true),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ crns }),
   });
 
   const payload = await response.json().catch(() => ({}));
-
   if (!response.ok) {
-    throw new Error(payload?.message ?? 'Could not submit registration plan.');
+    const reason = extractErrorMessage(payload, 'Failed to register selected courses.');
+    throw new Error(reason);
   }
 
-  return Array.isArray(payload?.data?.items) ? payload.data.items : [];
+  return Array.isArray(payload?.data) ? payload.data : [];
+}
+
+export async function fetchStudentEnrollments(studentId) {
+  const response = await fetch(`${API_BASE}/students/${studentId}/enrollments`, {
+    headers: getJsonHeaders(true),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(payload, 'Failed to fetch enrollments.'));
+  }
+  const payload = await response.json();
+  return coerceArray(payload?.data ?? payload);
+}
+
+export async function dropEnrollment(enrollmentId) {
+  const response = await fetch(`${API_BASE}/enrollments/${enrollmentId}`, {
+    method: 'DELETE',
+    headers: getJsonHeaders(true),
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(extractErrorMessage(payload, 'Failed to drop enrollment.'));
+  }
+  return true;
 }

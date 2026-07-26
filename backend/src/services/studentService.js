@@ -16,9 +16,9 @@ service.profile = async (studentId) => {
   return profile;
 };
 
-service.schedule = async (studentId) => {
+service.schedule = async (studentId, termId = null) => {
   await service.profile(studentId);
-  return repo.findSchedule(studentId);
+  return repo.findSchedule(studentId, termId);
 };
 
 service.enrollments = async (studentId) => {

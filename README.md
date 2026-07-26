@@ -26,15 +26,15 @@ The Course Registration Dashboard centralizes course planning, searching, and en
 ## 👥 The Team
 | Name | Primary Role |
 | :--- | :--- |
-| **Ahmed Nafees** | DevOps & Repo Lead |
-| **Nick Kunde-Lenny** | Scrum Master |
-| **Matt Kondratowicz** | Data Lead |
-| **Ayush Gogne** | UX Designer |
-| **Alex Near** | UI Designer |
-| **Naram Yashooa** | UI Designer |
-| **Ryan Chisholm** | Documentation |
-| **Manha Malik** | Proposal & Copy |
-| **Isabel Katai** | Proposal & Copy |
+| **Nick Kunde-Lenny** | Scrum Master, Back-end |
+| **Matthew Kondratowicz** | Back-end (controllers & routing) |
+| **Ahmed Nafees** | Front-end, Repository & Integration |
+| **Alex Near** | Front-end |
+| **Ryan Chisholm** | Front-end |
+| **Naram Yashooa** | Front-end |
+| **Ayush Gogne** | Front-end |
+| **Isabel Katai** | Front-end |
+| **Manha Malik** | Front-end |
 ---
 
 ## Project Cadence
@@ -56,14 +56,43 @@ A task is marked as **Done** only when:
 ---
 
 ## Setup & Installation
-*(Note: To be updated upon environment finalization)*
+
+This repository is a monorepo with two runnable apps: the REST API in `backend/` and the React client in `frontend/`. Run each in its own terminal.
+
+**Prerequisites:** Node.js 18 or newer and npm, plus a local MySQL 8 server.
+
+### Back-end (`backend/`)
 ```bash
-
-# Clone the repository
-git clone https://github.com/AhmedANafees/Internet_Computing.git
-
-# Install dependencies
+cd backend
 npm install
+cp .env.example .env          # then set DB_USER and DB_PASSWORD for your local MySQL
+npm run db:init               # create the database and tables
+npm run db:seed               # load sample data and test logins
+npm run dev                   # API on http://localhost:3000
+```
+Seeded logins: `teststudent@example.edu` / `Password123!` (student) and `admin@example.edu` / `Admin123!` (admin). The full API reference is in `backend/BACKEND.md`. Each teammate creates their own `backend/.env`; it is gitignored and should never be shared.
 
-# Run the development server
-npm start
+### Front-end (`frontend/`)
+```bash
+cd frontend
+npm install
+npm run dev                   # app on http://localhost:5173
+```
+The client reads its API base URL from `VITE_API_BASE_URL` (default `http://localhost:3001`). Point it at the running back-end by creating `frontend/.env`:
+```
+VITE_API_BASE_URL=http://localhost:3000
+```
+The back-end already allows the Vite origin `http://localhost:5173` through CORS.
+
+---
+
+## Team Contributions (Milestone 2)
+A brief summary of what each member worked on this milestone:
+
+* **Nick Kunde-Lenny**: Back-end REST API (Node, Express, MySQL), database schema, authentication and sessions, and the registration and conflict logic.
+* **Matthew Kondratowicz**: Back-end controllers and routing.
+* **Ahmed Nafees**: Repository structure and integration, plus front-end work on the timetable, dashboard, sidebar, course registration, and wiring the front-end to the backend APIs.
+* **Alex Near**: Front-end login and course registration views.
+* **Ryan Chisholm**: Front-end dashboard and timetable pages.
+* **Naram Yashooa**: Front-end course summary card component.
+* **Ayush Gogne, Isabel Katai, and Manha Malik**: Front-end UI and UX design.

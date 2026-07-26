@@ -34,6 +34,20 @@ const register = asyncHandler(async (req, res) => {
   res.status(result.result === 'failed' ? 409 : 201).json({ data: result });
 });
 
+const registerBatch = asyncHandler(async (req, res) => {
+  requireFields(req.body, ['crns']);
+  if (!Array.isArray(req.body.crns) || req.body.crns.length === 0) {
+    throw ApiError.badRequest('crns must be a non-empty array');
+  }
+  const studentId = targetStudentId(req);
+  if (!studentId) {
+    throw ApiError.forbidden('This action is only available to student accounts');
+  }
+  const crns = req.body.crns.map((value) => parseId(value, 'crn'));
+  const results = await service.registerBatch(studentId, crns);
+  res.status(200).json({ data: results });
+});
+
 const drop = asyncHandler(async (req, res) => {
   const enrollment = await service.findRaw(parseId(req.params.id, 'enrollment id'));
   if (!enrollment) {
@@ -62,4 +76,4 @@ const update = asyncHandler(async (req, res) => {
   res.json({ data: await service.update(parseId(req.params.id, 'enrollment id'), req.body) });
 });
 
-module.exports = { list, getById, register, drop, update, swap };
+module.exports = { list, getById, register, registerBatch, drop, update, swap };

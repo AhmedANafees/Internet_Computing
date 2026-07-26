@@ -16,11 +16,27 @@ function createApp() {
 
   app.use(helmet());
 
-  const corsOrigin =
-    config.server.corsOrigin === '*'
-      ? '*'
-      : config.server.corsOrigin.split(',').map((origin) => origin.trim());
-  app.use(cors({ origin: corsOrigin }));
+  const configuredOrigins = String(config.server.corsOrigin || '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+  const allowAnyOrigin = configuredOrigins.includes('*');
+  const allowedOrigins = new Set(configuredOrigins.filter((origin) => origin !== '*'));
+
+  const corsOptions = {
+    origin(origin, callback) {
+      // Allow non-browser requests (no Origin header) and configured browser origins.
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      const normalizedOrigin = origin.trim().replace(/\/$/, '');
+      callback(null, allowAnyOrigin || allowedOrigins.has(normalizedOrigin));
+    },
+  };
+
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));

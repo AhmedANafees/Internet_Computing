@@ -3,7 +3,7 @@
 .cr-layout {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: auto 1fr;
   background: #f6f0f0;
 }
 
@@ -168,6 +168,15 @@
   gap: 8px;
 }
 
+.cr-unenroll-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: #d87272;
+  color: #fff;
+}
+
 .cr-review-btn,
 .cr-submit-btn,
 .cr-back-btn {
@@ -207,6 +216,16 @@
 .cr-result--failed {
   background: #ffd8d8;
   color: #8a1f1f;
+}
+
+.cr-result--unchanged {
+  background: #e8d6d6;
+  color: #5a4040;
+}
+
+.cr-result--dropped {
+  background: #ffe7cc;
+  color: #8a4b00;
 }
 
 .cr-filter-top-row {
@@ -525,13 +544,28 @@
   color: #1a1a1a;
   cursor: pointer;
   user-select: none;
+  background: #f7f1f1;
+  border: 1px solid #e7dddd;
+  border-radius: 8px;
+  padding: 6px 8px;
 }
 
 .cr-filter-option input[type="checkbox"] {
-  accent-color: #9e7f7f;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #fff;
+  border: 1.5px solid #c9bcbc;
+  border-radius: 4px;
   width: 14px;
   height: 14px;
   cursor: pointer;
+  margin: 0;
+}
+
+.cr-filter-option input[type="checkbox"]:checked {
+  background: #9e7f7f;
+  border-color: #9e7f7f;
+  box-shadow: inset 0 0 0 2px #fff;
 }
 
 /* ── Chips row ───────────────────────────────────────────────────────────────── */
@@ -840,6 +874,15 @@
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
+  margin-left: 8px;
+}
+
+.cr-cart-badge--registered {
+  background: #2e7d32;
+}
+
+.cr-cart-badge--new {
+  background: #0288d1;
 }
 
 .cr-cart-header__credits {
@@ -1310,4 +1353,36 @@
 .cr-filters .cr-chips-row {
   margin-top: 8px;
   margin-bottom: 0;
+}
+
+/* Dashboard-consistent page shell */
+.cr-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  padding: 20px;
+  background:
+    radial-gradient(circle at 16% 8%, #f7eaea 0, transparent 34%),
+    radial-gradient(circle at 92% 94%, #efe0e0 0, transparent 38%),
+    #f6f2f2;
+}
+
+.cr-main {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+@media (max-width: 920px) {
+  .cr-layout {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .cr-main {
+    gap: 12px;
+  }
 }
