@@ -22,9 +22,10 @@ function getStoredUserName() {
   }
 }
 
-export default function Sidebar({ userName }) {
+export default function Sidebar({ userName, navItems }) {
   const navigate = useNavigate();
   const resolvedUserName = userName || getStoredUserName() || 'Student';
+  const resolvedNavItems = Array.isArray(navItems) && navItems.length > 0 ? navItems : NAV_ITEMS;
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
 
   function toggleCollapsed() {
@@ -53,7 +54,7 @@ export default function Sidebar({ userName }) {
         </div>
 
         <nav className="sidebar__nav">
-          {NAV_ITEMS.map(({ label, path }) => (
+          {resolvedNavItems.map(({ label, path }) => (
             <NavLink
               key={path}
               to={path}

@@ -85,7 +85,8 @@ async function handleSubmit(event, intendedRole) {
     if (authData.token) localStorage.setItem('token', authData.token)
     if (normalizedUser) localStorage.setItem('currentUser', JSON.stringify(normalizedUser))
 
-    navigate('/dashboard')
+    const destination = normalizedUser?.role === 'admin' ? '/admin/courses' : '/dashboard'
+    navigate(destination)
   } catch (error) {
     alert('Something Went Wrong. Try Again Later.')
     console.error(error)
