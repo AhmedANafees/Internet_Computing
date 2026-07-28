@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Course Registration', path: '/courses' },
-  { label: 'Timetable', path: '/timetable' },
-];
+import { resolveNavItems } from './navigation';
 
 function getStoredUserName() {
   try {
@@ -25,7 +20,16 @@ function getStoredUserName() {
 export default function Sidebar({ userName, navItems }) {
   const navigate = useNavigate();
   const resolvedUserName = userName || getStoredUserName() || 'Student';
-  const resolvedNavItems = Array.isArray(navItems) && navItems.length > 0 ? navItems : NAV_ITEMS;
+  const storedRole = (() => {
+    try {
+      const raw = localStorage.getItem('currentUser');
+      if (!raw) return '';
+      return JSON.parse(raw)?.role ?? '';
+    } catch {
+      return '';
+    }
+  })();
+  const resolvedNavItems = resolveNavItems(navItems, storedRole);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === 'true');
 
   function toggleCollapsed() {

@@ -15,11 +15,7 @@ import {
   fetchTerms,
 } from '../../services/courseService';
 import './AdminCoursePage.css';
-
-const ADMIN_NAV_ITEMS = [
-  { label: 'Course List', path: '/admin/courses' },
-  { label: 'Timetable', path: '/timetable' },
-];
+import { ADMIN_NAV_ITEMS } from '../../components/Sidebar/navigation';
 
 const DAYS = [
   { short: 'S', name: 'Sunday' },
