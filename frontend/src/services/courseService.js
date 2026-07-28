@@ -340,3 +340,81 @@ export async function dropEnrollment(enrollmentId) {
   }
   return true;
 }
+
+// Admin course management. These go through this module too, so every call the
+// app makes to the API still passes through a single service.
+
+async function readPayload(response, fallback) {
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(payload, fallback));
+  }
+  return payload;
+}
+
+async function getCollection(path, fallback) {
+  const response = await fetch(`${API_BASE}/${path}`, {
+    headers: getJsonHeaders(true),
+  });
+  return unwrapPayload(await readPayload(response, fallback));
+}
+
+async function postAsAdmin(path, body, fallback) {
+  if (!localStorage.getItem('token')) {
+    throw new Error('Please sign in as an administrator to manage courses.');
+  }
+  const response = await fetch(`${API_BASE}/${path}`, {
+    method: 'POST',
+    headers: {
+      ...getJsonHeaders(true),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = await readPayload(response, fallback);
+  return payload?.data ?? null;
+}
+
+export function fetchDepartments() {
+  return getCollection('departments', 'Failed to load departments.');
+}
+
+export function fetchTerms() {
+  return getCollection('terms', 'Failed to load terms.');
+}
+
+export function fetchRooms() {
+  return getCollection('rooms', 'Failed to load rooms.');
+}
+
+export function fetchInstructors() {
+  return getCollection('instructors', 'Failed to load instructors.');
+}
+
+export function fetchCourseRecords() {
+  return getCollection('courses', 'Failed to load courses.');
+}
+
+export function createCourse(course) {
+  return postAsAdmin('courses', course, 'Failed to add the course.');
+}
+
+export function createInstructor(instructor) {
+  return postAsAdmin('instructors', instructor, 'Failed to add the instructor.');
+}
+
+export function createSection(section) {
+  return postAsAdmin('sections', section, 'Failed to add the course section.');
+}
+
+export function createScheduleEntry(entry) {
+  return postAsAdmin('schedules', entry, 'Failed to add a meeting time.');
+}
+
+export function addPrerequisite(courseId, targetCourseId) {
+  return postAsAdmin(`courses/${courseId}/prerequisites`, { targetCourseId }, 'Failed to add a prerequisite.');
+}
+
+export function addCorequisite(courseId, targetCourseId) {
+  return postAsAdmin(`courses/${courseId}/corequisites`, { targetCourseId }, 'Failed to add a co-requisite.');
+}
