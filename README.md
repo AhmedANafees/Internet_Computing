@@ -68,7 +68,7 @@ npm install
 cp .env.example .env          # then set DB_USER and DB_PASSWORD for your local MySQL
 npm run db:init               # create the database and tables
 npm run db:seed               # load sample data and test logins
-npm run dev                   # API on http://localhost:3000
+npm run dev                   # API on http://localhost:3001
 ```
 Seeded logins: `teststudent@example.edu` / `Password123!` (student) and `admin@example.edu` / `Admin123!` (admin). The full API reference is in `backend/BACKEND.md`. Each teammate creates their own `backend/.env`; it is gitignored and should never be shared.
 
@@ -78,11 +78,19 @@ cd frontend
 npm install
 npm run dev                   # app on http://localhost:5173
 ```
-The client reads its API base URL from `VITE_API_BASE_URL` (default `http://localhost:3001`). Point it at the running back-end by creating `frontend/.env`:
+No front-end configuration is needed for the default setup. The client reads its API base URL from `VITE_API_BASE_URL` and falls back to `http://localhost:3001`, which is the port `backend/.env.example` already sets. Only create a `frontend/.env` if you changed `PORT` in `backend/.env`:
 ```
-VITE_API_BASE_URL=http://localhost:3000
+VITE_API_BASE_URL=http://localhost:3001
 ```
-The back-end already allows the Vite origin `http://localhost:5173` through CORS.
+
+**Open the app at `http://localhost:5173`, not `http://127.0.0.1:5173`.** The two are different origins to the browser, and `CORS_ORIGIN` in `backend/.env.example` allows the first. Loading the app from the `127.0.0.1` address makes every API call fail with a CORS error, and sign in will not work.
+
+### Running the tests
+```bash
+cd frontend
+npm test                      # Node.js built-in test runner, no database needed
+```
+The automated unit tests live in `frontend/tests`. There are no automated tests in `backend/`; running `npm test` there prints a pointer to this suite. Manual test coverage and results are documented in the Milestone 3 testing summary report.
 
 ---
 
