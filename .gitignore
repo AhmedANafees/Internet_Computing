@@ -3,9 +3,10 @@ node_modules/
 frontend/node_modules/
 backend/node_modules/
 
-# Frontend build/cache artifacts
-frontend/dist/
-frontend/.vite/
+# Frontend build/cache artifacts. These are unanchored so a Vite cache is
+# ignored wherever it appears, not just at the repository root.
+dist/
+.vite/
 
 # Backend environment and local artifacts
 backend/.env
